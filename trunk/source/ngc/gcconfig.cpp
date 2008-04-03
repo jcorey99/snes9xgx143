@@ -39,13 +39,17 @@ extern void uselessinquiry ();
 
 extern int allowupdown;
 
+extern unsigned char isWii;
+
 void credits();
 int ConfigMenu();
 void SetScreen();
 void ClearScreen();
 
-char *title = "Snes9x 1.43 - GX Edition 0.0.9";
+char *title = "Snes9x 1.43 - GX Edition 0.1.0";
 extern int CARDSLOT;
+
+#define SOFTRESET_ADR ((volatile u32*)0xCC003024)
 
 /****************************************************************************
  * Font drawing support
@@ -68,6 +72,42 @@ int CentreTextPosition( char *text )
 void WriteCentre( int y, char *text )
 {
 	write_font( CentreTextPosition(text), y, text);
+}
+
+/**
+ * Wait for user to press A or B. Returns 0 = B; 1 = A
+ */
+int WaitButtonAB ()
+{
+    int btns;
+  
+    while ( (PAD_ButtonsDown (0) & (PAD_BUTTON_A | PAD_BUTTON_B)) );
+  
+    while ( TRUE )
+    {
+        btns = PAD_ButtonsDown (0);
+        if ( btns & PAD_BUTTON_A )
+            return 1;
+        else if ( btns & PAD_BUTTON_B )
+            return 0;
+    }
+}
+
+/**
+ * Show a prompt with choice of two options. Returns 1 if A button was pressed
+   and 0 if B button was pressed.
+ */
+int WaitPromptChoice (char *msg, char *bmsg, char *amsg)
+{
+  char choiceOption[80];  
+  sprintf (choiceOption, "B = %s   :   A = %s", bmsg, amsg);
+
+  ClearScreen ();  
+  WriteCentre(220, msg);
+  WriteCentre(220 + font_height, choiceOption);  
+  SetScreen ();
+
+  return WaitButtonAB ();
 }
 
 void WaitPrompt( char *msg )
@@ -170,7 +210,7 @@ void Welcome()
 
 		SetScreen();
 		
-		if ( PAD_ButtonsDown(0) & PAD_BUTTON_A ) quit = 1;
+		if ( (PAD_ButtonsDown(0) & PAD_BUTTON_A) || (PAD_ButtonsDown(0) & PAD_BUTTON_B) ) quit = 1;
 	}
 
 	showspinner = 1;
@@ -182,13 +222,15 @@ void Welcome()
 void credits()
 {
 	int quit = 0;
-
+	
+	showspinner = 0;
+	
 	while (quit == 0)
 	{
 		ClearScreen();
 
-        	/*** Title ***/
-        	write_font(CentreTextPosition(title) , ( 480 - ( 16 * font_height )) >> 1 , title);
+        /*** Title ***/
+        write_font(CentreTextPosition(title) , ( 480 - ( 16 * font_height )) >> 1 , title);
 
 		int p = 80;
 
@@ -208,13 +250,15 @@ void credits()
 		WriteCentre( p += font_height, "cedy_nl, raz, scognito");
 
 		//p += font_height;
-		WriteCentre( p += font_height, "Extra features: KruLLo, Askot");
+		WriteCentre( p += font_height, "Extras: KruLLo, Askot, dsbomb");
 		WriteCentre( p += font_height, "Support - http://www.tehskeen.com");
 
 		SetScreen();
 
-		if ( PAD_ButtonsDown(0) & PAD_BUTTON_A ) quit = 1;
+		if ( (PAD_ButtonsDown(0) & PAD_BUTTON_A) || (PAD_ButtonsDown(0) & PAD_BUTTON_B) ) quit = 1;
 	}
+	
+	showspinner = 1;
 }
 
 /****************************************************************************
@@ -313,32 +357,32 @@ void ConfigPAD()
 			   padmenu[i+1][16] == 'Y' ? 3 : 0;
 	}
 
-        while ( quit == 0 )
-        {
-                if ( redraw ) {
-					sprintf(padmenu[0],"SETUP %c", PADCON + 65);
-					strcpy(padmenu[6], allowupdown == 1 ? "ALLOW U+D / L+R ON" : "ALLOW U+D / L+R OFF");
-                    DrawMenu("Gamecube Pad Configuration", &padmenu[0], configpadcount, menu);
-				}
+    while ( quit == 0 )
+    {
+        if ( redraw ) {
+			sprintf(padmenu[0],"SETUP %c", PADCON + 65);
+			strcpy(padmenu[6], allowupdown == 1 ? "ALLOW U+D / L+R ON" : "ALLOW U+D / L+R OFF");
+            DrawMenu("Gamecube Pad Configuration", &padmenu[0], configpadcount, menu);
+		}
 
-                redraw = 1;
+        redraw = 1;
 
-                j = PAD_ButtonsDown(0);
+        j = PAD_ButtonsDown(0);
 
-                if ( j & PAD_BUTTON_DOWN ) {
-                        menu++;
-                        redraw = 1;
-                }
+        if ( j & PAD_BUTTON_DOWN ) {
+            menu++;
+            redraw = 1;
+        }
 
-                if ( j & PAD_BUTTON_UP ) {
-                        menu--;
-                        redraw = 1;
-                }
+        if ( j & PAD_BUTTON_UP ) {
+            menu--;
+            redraw = 1;
+        }
 
-                if ( j & PAD_BUTTON_A ) {
-                        redraw = 1;
+        if ( j & PAD_BUTTON_A ) {
+            redraw = 1;
 			switch( menu ) {
-
+			
 				case 0: PADCON++;
 					if ( PADCON == 5 )
 						PADCON = 0;
@@ -382,11 +426,13 @@ void ConfigPAD()
 			}
 		}
 
-                if ( menu < 0 )
-                        menu = configpadcount - 1;
+		if ( j & PAD_BUTTON_B ) quit = 1;
 
-                if ( menu == configpadcount )
-                        menu = 0;
+        if ( menu < 0 )
+            menu = configpadcount - 1;
+
+        if ( menu == configpadcount )
+            menu = 0;
 	}
 
 	showcontroller = 0;
@@ -411,54 +457,56 @@ void savegame()
         int redraw = 1;
         int quit = 0;
 
-        while ( quit == 0 )
-        {
-                if ( redraw ){
-					sprintf(sgmenu[0], (slot == 0) ? "Use: SLOT A" : "Use: SLOT B");
-					sprintf(sgmenu[1], (device == 0) ? "Device:  MCARD" : "Device: SDCARD");
-					DrawMenu("Save Game Manager", &sgmenu[0], sgmcount, menu);
-				} 
+    while ( quit == 0 )
+    {
+        if ( redraw ){
+			sprintf(sgmenu[0], (slot == 0) ? "Use: SLOT A" : "Use: SLOT B");
+			sprintf(sgmenu[1], (device == 0) ? "Device:  MCARD" : "Device: SDCARD");
+			DrawMenu("Save Game Manager", &sgmenu[0], sgmcount, menu);
+		} 
 
-				redraw = 1;
+		redraw = 1;
 
-                j = PAD_ButtonsDown(0);
+        j = PAD_ButtonsDown(0);
 
-                if ( j & PAD_BUTTON_DOWN ) {
-                        menu++;
-                        redraw = 1;
-                }
+        if ( j & PAD_BUTTON_DOWN ) {
+            menu++;
+            redraw = 1;
+        }
 
-                if ( j & PAD_BUTTON_UP ) {
-                        menu--;
-                        redraw = 1;
-                }
+        if ( j & PAD_BUTTON_UP ) {
+            menu--;
+            redraw = 1;
+        }
 
-                if ( j & PAD_BUTTON_A ) {
-                    redraw = 1;
+        if ( j & PAD_BUTTON_A ) {
+            redraw = 1;
 
-					while( PAD_ButtonsDown(0) & PAD_BUTTON_A ) {};
-                        switch( menu ) {
-                            case 0 :
-								slot ^= 1;
-								break;
-							case 1 : 
-								device ^= 1;
-								break;
-							case 2 : 
-								SaveSRAM(1,slot,device); //Save
-								break;
-							case 3 :
-								SaveSRAM(0,slot,device);  //Load
-								break;
-							case 4 :
-								quit = 1; 
-								break;
-						}
-				} 
+			while( PAD_ButtonsDown(0) & PAD_BUTTON_A ) {};
+                switch( menu ) {
+                    case 0 :
+						slot ^= 1;
+						break;
+					case 1 : 
+						device ^= 1;
+						break;
+					case 2 : 
+						SaveSRAM(1,slot,device); //Save
+						break;
+					case 3 :
+						SaveSRAM(0,slot,device);  //Load
+						break;
+					case 4 :
+						quit = 1; 
+						break;
+				}
+		} 
 
-                if ( menu < 0 ) menu = sgmcount - 1;
+		if ( j & PAD_BUTTON_B ) quit = 1;
+		
+        if ( menu < 0 ) menu = sgmcount - 1;
 
-                if ( menu == sgmcount ) menu = 0;
+        if ( menu == sgmcount ) menu = 0;
 	}
 }
 
@@ -546,12 +594,13 @@ void EmuMenu()
 			}			
 		}
 
-                if ( menu < 0 )
-                        menu = emumenucount - 1;
+		if ( j & PAD_BUTTON_B ) quit = 1;
+		
+        if ( menu < 0 )
+            menu = emumenucount - 1;
 
-                if ( menu == emumenucount )
-                        menu = 0;
-
+        if ( menu == emumenucount )
+            menu = 0;
 	}
 }
 
@@ -559,12 +608,13 @@ void EmuMenu()
  * Media Select Screen
  ****************************************************************************/
  
-int mediacount = 4;
-int choosenSDSlot = 0;
+//int choosenSDSlot = 0;
+int mediacount = 3;
 
-char mediamenu[4][20] = { 
+char mediamenu[3][20] = { 
 	{ "Load from DVD" }, { "Load from SDCARD"}, 
-	{ "Dev. SDCARD:SLOT A" }, { "Return to previous" } 
+	//{ "Dev. SDCARD:SLOT A" }, 
+	{ "Return to previous" } 
 };
 
 int MediaSelect(){
@@ -605,16 +655,18 @@ int MediaSelect(){
 						OpenSD();
 						return 1;
 						break;
-				case 2:
+				/*case 2:
 						choosenSDSlot ^= 1;
 						sprintf(mediamenu[2], (!choosenSDSlot) ? "Dev. SDCARD:SLOT A" : "Dev. SDCARD:SLOT B");
-						break;
-				case 3: quit = 1;
+						break;*/
+				case 2: quit = 1;
 						break;
 
 				default: break ;
 			}
 		}
+		
+		if ( j & PAD_BUTTON_B ) quit = 1;
 
 		if ( menu == mediacount  )
 			menu = 0;		
@@ -643,12 +695,19 @@ int MediaSelect(){
  *	1.8 View Credits
  *	1.9 Return to Game
  ****************************************************************************/
-int configmenucount = 10;
-char configmenu[10][20] = {
-	{ "Play Game" }, { "ROM Information" }, { "Configure Joypads" },
-	{ "Emulator Options" }, { "Load New Game" }, { "PSO/SD Reload" }, 
-	{ "Reset Emulator" }, { "Stop DVD Motor" }, { "SRAM Manager" }, 
-	{ "View Credits" }  
+int configmenucount = 11;
+char configmenu[11][20] = {
+	{ "Play Game" }, 
+        { "Reset Emulator" },
+        { "Load New Game" }, 
+        { "SRAM Manager" }, 
+        { "ROM Information" }, 
+        { "Configure Joypads" },
+	{ "Emulator Options" }, 
+        { "Stop DVD Motor" }, 
+        { "PSO/SD Reload" },
+        { "Reboot Gamecube" }, 
+        { "View Credits" }  
 };
 			    
 int ConfigMenu()
@@ -663,6 +722,9 @@ int ConfigMenu()
 	copynow = GX_FALSE;
 	Settings.Paused =TRUE;
 	S9xSetSoundMute(TRUE);
+
+    if (isWii)
+        strcpy(configmenu[9], "Reboot Wii");
 
     while ( quit == 0 )
 	{
@@ -688,36 +750,40 @@ int ConfigMenu()
             redraw = 1;
 			switch( menu ) {
 
-				case 0 :
+				case 0 : // Play Game
 					quit = 1;
 					break;
-				case 1 :
-					Welcome();
-					break;
-				case 2 :
-					ConfigPAD();
-					break;
-				case 3 :
-					EmuMenu();
-					break;
-				case 4 :	/*** Load ROM ***/
-					MediaSelect();
-					break;
-				case 5 :	
-					PSOReload();
-					break;
-				case 6 :
+				case 1 : // Reset Emulator
 					S9xSoftReset();
 					quit = 1;
 					break;
-				case 7:
+				case 2 : // Load New Game
+					MediaSelect();
+					break;
+				case 3 : // SRAM Manager
+					savegame();
+					break;
+				case 4 : // ROM Information
+					Welcome();
+					break;
+				case 5 : // Configure Joypads
+					ConfigPAD();
+					break;
+				case 6 : // Emulator Options
+					EmuMenu();
+					break;
+				case 7: // Stop DVD Motor
 					ShowAction("Stopping DVD ... Wait");
 					dvd_motor_off();
+					WaitPrompt("DVD Motor Stopped");
 					break;
-				case 8 :
-					savegame(); /*** Save SRAM ***/
+				case 8 : // PSO Reload
+					PSOReload();
 					break;
-				case 9 :	
+				case 9 : // Reboot
+					*SOFTRESET_ADR = 0x00000000;
+					break;
+				case 10 : // View Credits
 					credits();
 					break;
 				default :
@@ -725,12 +791,13 @@ int ConfigMenu()
             }
         }
 
-            if ( menu < 0 )
-                menu = configmenucount - 1;
+		if ( j & PAD_BUTTON_B ) quit = 1;
+        if ( menu < 0 )
+            menu = configmenucount - 1;
 
-            if ( menu == configmenucount )
-                menu = 0;
-        }
+        if ( menu == configmenucount )
+            menu = 0;
+    }
 
 	/*** Remove any still held buttons ***/
 	while(PAD_ButtonsHeld(0)) VIDEO_WaitVSync();

@@ -50,7 +50,7 @@ unsigned int DecodeJoy( unsigned short p )
  * 
  * Additional check for Analog X/Y
  ****************************************************************************/
-int PADCAL = 70;
+int PADCAL = 40;
 
 unsigned int GetAnalog( int Joy )
 {
@@ -97,7 +97,7 @@ unsigned int GetJoys(int which)
 
    /*** Check for menu, now CStick left/right (and if you use a HORI controller Z + R works too) ***/
 	px = PAD_SubStickX (0);
-	if ( (px < -70 || px > 70) || (PAD_ButtonsHeld(0) == ( PAD_TRIGGER_Z  | PAD_TRIGGER_R )) || (PAD_ButtonsHeld(0) == ( PAD_TRIGGER_L  | PAD_TRIGGER_R | PAD_BUTTON_X | PAD_BUTTON_Y )))
+	if ( (px < -PADCAL || px > PADCAL) || (PAD_ButtonsHeld(0) == ( PAD_TRIGGER_Z  | PAD_TRIGGER_R )) || (PAD_ButtonsHeld(0) == ( PAD_TRIGGER_L  | PAD_TRIGGER_R | PAD_BUTTON_X | PAD_BUTTON_Y )))
 		ConfigRequested = 1;
 
 	joypads = 0;

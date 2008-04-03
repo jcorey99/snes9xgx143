@@ -470,7 +470,8 @@ void InitGCVideo()
 	VIDEO_ClearFrameBuffer( vmode, xfb[ 0 ], COLOR_BLACK );
 	VIDEO_ClearFrameBuffer( vmode, xfb[ 1 ], COLOR_BLACK );
         VIDEO_SetNextFramebuffer(xfb[0]);
-        VIDEO_SetPostRetraceCallback(PAD_ScanPads);
+        //VIDEO_SetPostRetraceCallback(PAD_ScanPads);
+		VIDEO_SetPostRetraceCallback((VIRetraceCallback)PAD_ScanPads);
         VIDEO_SetPreRetraceCallback(SnesTimer);
         VIDEO_SetBlack(FALSE);
         VIDEO_Flush();

@@ -125,6 +125,8 @@ uint8 S9xGetDSP (uint16 Address);
 void S9xSetDSP (uint8 Byte, uint16 Address);
 END_EXTERN_C
 
+#ifndef _GLOBALS_CPP
 extern struct SDSP1 DSP1;
+#endif
 
 #endif
