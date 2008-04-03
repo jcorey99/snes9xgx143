@@ -60,9 +60,11 @@ extern bool isZipFile();
 extern int unzipDVDFile( unsigned char *outbuffer, unsigned int discoffset, unsigned int length);
 extern void mdelay(unsigned int us);
 extern int IsXenoGCImage( char *buffer );
-void GetSDInfo () ;
-extern int choosenSDSlot;
+void GetSDInfo();
 
+extern int choosenSDSlot;
+extern unsigned char isWii;
+int sdslot = 0;
 /****************************************************************************
  * DVD Lowlevel Functions
  *
@@ -224,7 +226,7 @@ unsigned int dvd_read(void *dst, unsigned int len, unsigned int offset)
     if (len > 2048 )
         return 1;
 
-    if (offset<0x57057C00)
+    if ( (offset<0x57057C00) || (isWii && offset < 0x1FD3E0000LL) ) // Don't read past 8,543,666,176 DVD9
     {
         dvd[0] = 0x2E;
         dvd[1] = 0;
@@ -443,7 +445,6 @@ int updateSDdirname()
   int size=0;
   char *test;
   char temp[1024];
-  char tmpCompare[1024];
 
    /* current directory doesn't change */
    if (strcmp(filelist[selection].filename,".") == 0) return 0; 
@@ -465,9 +466,7 @@ int updateSDdirname()
      rootSDdir[size] = 0;
 
 	 /* handles root name */
-	 sprintf(tmpCompare, "dev%d:",choosenSDSlot);
-	 if (strcmp(rootSDdir,tmpCompare) == 0)sprintf(rootSDdir,"dev%d:\\snes9x\\..", choosenSDSlot); 
-	 //if (strcmp(rootSDdir,"dev0:") == 0) sprintf(rootSDdir,"dev0:\\snes9x\\..");
+	 if (strcmp(rootSDdir, sdslot ? "dev1:":"dev0:") == 0)sprintf(rootSDdir,"dev%d:\\snes9x\\..", sdslot); 
 	 
      return 1;
    }
@@ -477,9 +476,9 @@ int updateSDdirname()
      if ((strlen(rootSDdir)+1+strlen(filelist[selection].filename)) < SDCARD_MAX_PATH_LEN) 
      {
        /* handles root name */
-	   sprintf(tmpCompare, "dev%d:\\snes9x\\..",choosenSDSlot);
-	   if (strcmp(rootSDdir, tmpCompare) == 0) sprintf(rootSDdir,"dev%d:",choosenSDSlot);
-	   //if (strcmp(rootSDdir,"dev0:\\snes9x\\..") == 0) sprintf(rootSDdir,"dev0:");
+	   //sprintf(tmpCompare, "dev%d:\\snes9x\\..",choosenSDSlot);
+	   //if (strcmp(rootSDdir, tmpCompare) == 0) sprintf(rootSDdir,"dev%d:",choosenSDSlot);
+		if (strcmp(rootSDdir, sdslot ? "dev1:\\snes9x\\.." : "dev0:\\snes9x\\..") == 0) sprintf(rootSDdir,"dev%d:",sdslot);
 	 
        /* update current directory name */
        sprintf(rootSDdir, "%s\\%s",rootSDdir, filelist[selection].filename);
@@ -500,6 +499,7 @@ int parseSDdirectory()
 {
   int entries = 0;
   int nbfiles = 0;
+  int numstored = 0;
   DIR *sddir = NULL;
 
   /* initialize selection */
@@ -514,11 +514,14 @@ int parseSDdirectory()
   /* Move to DVD structure - this is required for the file selector */ 
   while (entries)
   {
-      memset (&filelist[nbfiles], 0, sizeof (FILEENTRIES));
-      strncpy(filelist[nbfiles].filename,(const char*)sddir[nbfiles].fname,MAXJOLIET);
-      filelist[nbfiles].filename[MAXJOLIET-1] = 0;
-	  filelist[nbfiles].length = sddir[nbfiles].fsize;
-	  filelist[nbfiles].flags = (char)(sddir[nbfiles].fattr & SDCARD_ATTR_DIR);
+      if (strcmp((const char*)sddir[nbfiles].fname, ".") != 0) { // Skip "." directory
+          memset (&filelist[numstored], 0, sizeof (FILEENTRIES));
+          strncpy(filelist[numstored].filename,(const char*)sddir[nbfiles].fname,MAXJOLIET);
+          filelist[numstored].filename[MAXJOLIET-1] = 0;
+          filelist[numstored].length = sddir[nbfiles].fsize;
+          filelist[numstored].flags = (char)(sddir[nbfiles].fattr & SDCARD_ATTR_DIR);
+          numstored++;
+      }
       nbfiles++;
       entries--;
   }
@@ -526,7 +529,7 @@ int parseSDdirectory()
   /*** Release memory ***/
   free(sddir);
   
-  return nbfiles;
+  return numstored;
 }
 
 /****************************************************************************
@@ -753,15 +756,6 @@ int OpenDVD()
 	dvd_inquiry();
 	driveid = (int)inquiry[2];
 
-	/*** Make sure it's one I now about ***/
-	if ( ( driveid != 4 ) && ( driveid != 6 ) && ( driveid != 8 ) ) {
-		//
-		WaitPrompt("Unknown drive id! ... Halted");
-		return 0;
-		// if the driveid isn't 4, 6 or 8 we are running on a Wii
-		//isWii = true;
-	}
-
 	memset(&readbuffer, 0x80, 2048);
 	dvd_read(&readbuffer, 2048,0);
 
@@ -836,17 +830,16 @@ int OpenSD () {
   UseSDCARD = 1;
   char msg[128];
   
+  if (choosenSDSlot != sdslot) haveSDdir = 0;
+  
   if (haveSDdir == 0)
   {
      /* don't mess with DVD entries */
 	 havedir = 0;
-	 
-	 /* Initialise libOGC SD functions */ 
-     SDCARD_Init ();
  
      /* Reset SDCARD root directory */
 	 sprintf(rootSDdir,"dev%d:\\snes9x\\roms",choosenSDSlot);
-     //sprintf(rootSDdir,"dev0:\\snes9x\\roms");
+     sdslot = choosenSDSlot;
  
 	 /* Parse initial root directory and get entries list */
 	 ShowAction("Reading Directory ...");
@@ -863,7 +856,7 @@ int OpenSD () {
 	 else
      {
         /* no entries found */
-		sprintf (msg, "Error reading dev%d:\\fceu\\roms", choosenSDSlot);
+		sprintf (msg, "Error reading dev%d:\\snes9x\\roms", choosenSDSlot);
 	    WaitPrompt (msg);
         return 0;
 	 }

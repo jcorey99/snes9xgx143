@@ -173,7 +173,7 @@ int SaveToCard( int mode, int outbytes, int slot )
 	int CardError;
 	unsigned int SectorSize;
 	unsigned int blocks;
-	char comment[2][32] = { { "Snes9x 1.43 SRAM (GX0.0.9)" }, { "Savegame" } };
+	char comment[2][32] = { { "Snes9x 1.43 SRAM (GX0.1.0)" }, { "Savegame" } };
 	int filesize;
 	int sbo;
 
@@ -205,6 +205,7 @@ int SaveToCard( int mode, int outbytes, int slot )
 		switch ( mode )
 		{
 			case 0:	/*** Load a saved SRAM ***/
+				{
 				if ( !CardFileExists(savefilename, slot) )
 				{	WaitPrompt("No SRAM Save Found");
 					return 0;
@@ -248,9 +249,9 @@ int SaveToCard( int mode, int outbytes, int slot )
 				ISACTIVE[slot] = 1;
 				S9xSoftReset();	//Auto reset feature after loading file
 				break;
-
+			}
 			case 1: /*** Save an SRAM Game ***/
-
+			
 				/*** Determine number of blocks on this card ***/
 				blocks = ( outbytes / SectorSize ) * SectorSize;
 				if ( outbytes % SectorSize )
@@ -299,7 +300,7 @@ int SaveToCard( int mode, int outbytes, int slot )
 				WaitPrompt(action);
 				ISACTIVE[slot]=1;
 				return 1;
-				break;
+			break;
 		}		
 	} else {
 		WaitPrompt("Unable to mount memory card!");
@@ -314,7 +315,7 @@ int SaveBufferToSD (char *filepath, unsigned long datasize)
 {
     sd_file *handle;
     
-    SDCARD_Init ();
+    //SDCARD_Init ();
     
     if (datasize)
     {
@@ -377,7 +378,7 @@ int LoadBufferFromSD (char *filepath)
     int offset = 0;
     int read = 0;
     
-    SDCARD_Init ();
+    //SDCARD_Init ();
     
     handle = SDCARD_OpenFile (filepath, "rb");
     

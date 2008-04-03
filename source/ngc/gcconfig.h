@@ -7,3 +7,4 @@ extern int GetTextWidth( char *text );
 extern int ConfigMenu();
 extern void WaitPrompt( char *msg );
 extern void ShowAction( char *msg );
+extern int WaitPromptChoice(char *msg, char *bmsg, char *amsg);

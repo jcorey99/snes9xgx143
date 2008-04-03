@@ -7,6 +7,7 @@
  ****************************************************************************/
 
 #include <gccore.h>
+#include <sdcard.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -37,6 +38,7 @@ unsigned char *offscreen;
 unsigned char *subscreen;
 unsigned char *Delta;
 unsigned int timerres;
+unsigned char isWii = 0;
 int ConfigRequested = 0;
 
 extern void InitGCVideo();
@@ -50,6 +52,8 @@ extern void AudioGo();
 extern int snesromsize;
 extern int ConfigMenu();
 extern void unpackanim();
+static unsigned char *inquiry=(unsigned char *)0x80000004;
+extern void dvd_inquiry();
 
 tb_t prev;
 tb_t now;
@@ -308,6 +312,7 @@ void Emulate()
 /****************************************************************************
  * Program Entry - Main
  ****************************************************************************/
+int choosenSDSlot = 0;
 
 int main()
 {
@@ -316,6 +321,15 @@ int main()
 
 	InitGCVideo();
 	unpackanim();
+	SDCARD_Init();
+	
+	/*** Get Drive Type ***/
+	dvd_inquiry();
+	int driveid = (int)inquiry[2];
+
+	if ( ( driveid != 4 ) && ( driveid != 6 ) && ( driveid != 8 ) ) {
+		isWii = true;
+	}
 
 	/*** Configure defaults, a la msdos ***/
 	configDefaults();
@@ -351,6 +365,7 @@ int main()
 
 	Memory.LoadSRAM( "DVD" );
 	
+	choosenSDSlot = !WaitPromptChoice("Choose a SLOT to load Roms from SDCARD", "SLOT B", "SLOT A");
 	ConfigMenu();
 
 	Emulate();
