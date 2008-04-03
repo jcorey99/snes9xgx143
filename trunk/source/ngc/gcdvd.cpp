@@ -846,7 +846,7 @@ int OpenSD () {
      if ((maxfiles = parseSDdirectory ()))
 	 {
 		sprintf (msg, "Found %d entries", maxfiles);
-		WaitPrompt (msg);
+		ShowAction(msg);
 		/* Select an entry */
 		FileSelector ();
     
