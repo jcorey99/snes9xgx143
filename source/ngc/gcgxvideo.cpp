@@ -448,6 +448,8 @@ void InitGCVideo()
 			break;
 
 		case VI_PAL:
+			vmode = &TVPal528IntDf;
+			break;
 		case VI_MPAL:
 			vmode = &TVMpal480IntDf;
 			break;

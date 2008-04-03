@@ -21,7 +21,6 @@ extern unsigned int blit_lookup[4];
 extern unsigned int blit_lookup_inv[4];
 extern void GetISODirectory();
 extern void AnimFrame();
-//extern int SaveSRAM(int mode);
 extern int SaveSRAM( int mode, int slot, int type);
 extern int OpenDVD();
 extern int OpenSD();
@@ -210,7 +209,7 @@ void Welcome()
 
 		SetScreen();
 		
-		if ( (PAD_ButtonsDown(0) & PAD_BUTTON_A) || (PAD_ButtonsDown(0) & PAD_BUTTON_B) ) quit = 1;
+		if (PAD_ButtonsDown(0) & (PAD_BUTTON_A || PAD_BUTTON_B) ) quit = 1;
 	}
 
 	showspinner = 1;
@@ -255,7 +254,7 @@ void credits()
 
 		SetScreen();
 
-		if ( (PAD_ButtonsDown(0) & PAD_BUTTON_A) || (PAD_ButtonsDown(0) & PAD_BUTTON_B) ) quit = 1;
+		if (PAD_ButtonsDown(0) & (PAD_BUTTON_A || PAD_BUTTON_B) ) quit = 1;
 	}
 	
 	showspinner = 1;
@@ -362,8 +361,12 @@ void ConfigPAD()
         if ( redraw ) {
 			sprintf(padmenu[0],"SETUP %c", PADCON + 65);
 			strcpy(padmenu[6], allowupdown == 1 ? "ALLOW U+D / L+R ON" : "ALLOW U+D / L+R OFF");
+                        sprintf(padmenu[5],"ANALOG CLIP   - %d", PADCAL);
             DrawMenu("Gamecube Pad Configuration", &padmenu[0], configpadcount, menu);
 		}
+            if (j & PAD_BUTTON_B) {
+                quit = 1;
+            }
 
         redraw = 1;
 
@@ -502,7 +505,7 @@ void savegame()
 				}
 		} 
 
-		if ( j & PAD_BUTTON_B ) quit = 1;
+		if (j & PAD_BUTTON_B) quit = 1;
 		
         if ( menu < 0 ) menu = sgmcount - 1;
 
@@ -593,8 +596,11 @@ void EmuMenu()
 
 			}			
 		}
+                if (j & PAD_BUTTON_B) {
+                    quit = 1;
+                }
 
-		if ( j & PAD_BUTTON_B ) quit = 1;
+		if (j & PAD_BUTTON_B) quit = 1;
 		
         if ( menu < 0 )
             menu = emumenucount - 1;
@@ -705,7 +711,7 @@ char configmenu[11][20] = {
         { "Configure Joypads" },
 	{ "Emulator Options" }, 
         { "Stop DVD Motor" }, 
-        { "PSO/SD Reload" },
+        { "PSO Reload" },
         { "Reboot Gamecube" }, 
         { "View Credits" }  
 };
@@ -723,8 +729,10 @@ int ConfigMenu()
 	Settings.Paused =TRUE;
 	S9xSetSoundMute(TRUE);
 
-    if (isWii)
+    if (isWii) {
         strcpy(configmenu[9], "Reboot Wii");
+        strcpy(configmenu[8], "SD Reload");
+    }
 
     while ( quit == 0 )
 	{

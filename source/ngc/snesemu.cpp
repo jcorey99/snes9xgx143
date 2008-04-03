@@ -38,7 +38,7 @@ unsigned char *offscreen;
 unsigned char *subscreen;
 unsigned char *Delta;
 unsigned int timerres;
-unsigned char isWii = 0;
+unsigned char isWii = false;
 int ConfigRequested = 0;
 
 extern void InitGCVideo();
@@ -55,6 +55,10 @@ extern void unpackanim();
 static unsigned char *inquiry=(unsigned char *)0x80000004;
 extern void dvd_inquiry();
 
+void (*PSOReload)() = (void(*)())0x80001800;
+static void reset_cb() {
+    PSOReload();
+}
 tb_t prev;
 tb_t now;
 
@@ -320,6 +324,7 @@ int main()
 	unsigned int save_flags;
 
 	InitGCVideo();
+        SYS_SetResetCallback(reset_cb);
 	unpackanim();
 	SDCARD_Init();
 	
