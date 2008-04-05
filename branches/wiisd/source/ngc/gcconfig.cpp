@@ -672,7 +672,8 @@ int MediaSelect() {
 
                 case 2:
                         choosenSDSlot++;
-                        if (choosenSDSlot >= numsdslots) choosenSDSlot = 0;
+                        if ( (choosenSDSlot >= numsdslots) || ( (!isWii) && (choosenSDSlot > 1) ) )
+                            choosenSDSlot = 0;
                         sprintf(mediamenu[2], "Dev. SDCARD: %s", sdslots[choosenSDSlot]);
                         break;
                 case 3: quit = 1;
