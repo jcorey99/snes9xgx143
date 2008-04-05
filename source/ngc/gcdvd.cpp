@@ -13,8 +13,8 @@
 #include <memmap.h>
 #include "gcconfig.h"
 
-#include "sdio.h"
-#include "tff.h"
+#include "wiisd/sdio.h"
+#include "wiisd/tff.h"
 
 /*** Simplified Directory Entry Record I only care about a couple of values ***/
 #define RECLEN 0
@@ -447,6 +447,7 @@ int parsedir()
     return filecount;
 }
 
+#ifdef HW_RVL
 /***************************************************************************
  * Update WiiSDCARD curent directory name 
  ***************************************************************************/ 
@@ -499,6 +500,7 @@ int updateWiiSDdirname()
                 }
         } 
 }
+#endif
 
 /***************************************************************************
  * Update SDCARD curent directory name 
@@ -600,6 +602,7 @@ int parseSDdirectory()
  ***************************************************************************/ 
 int parseWiiSDdirectory()
 {
+#ifdef HW_RVL
     int entries = 0;
     int nbfiles = 0;
     int numstored = 0;
@@ -656,6 +659,7 @@ int parseWiiSDdirectory()
     if (entries > MAXFILES) entries = MAXFILES;
 
     return numstored;
+#endif
 }
 
 /****************************************************************************
@@ -783,8 +787,8 @@ void FileSelector()
                         haverom   = 1; // quit SD menu
                         haveSDdir = 0; // reset everything at next access
                     }
-                }
-                else if (UseFrontSDCARD) {
+#ifdef HW_RVL
+                } else if (UseFrontSDCARD) {
                     /* update current directory and set new entry list if directory has changed */
                         int status = updateWiiSDdirname();
                         if (status == 1)
@@ -802,6 +806,7 @@ void FileSelector()
                             haverom   = 1; // quit SD menu
                             haveWiiSDdir = 0; // reset everything at next access
                         }
+#endif
                 } else {
                     rootdir = filelist[selection].offset;
                     rootdirlength = filelist[selection].length;
@@ -846,6 +851,7 @@ int LoadDVDFile( unsigned char *buffer )
     u32 bytes_read_total;
     u8 *data = (u8 *)0x92000000;
 
+#ifdef HW_RVL
     if(UseFrontSDCARD)
     {
         ShowAction("Loading ... Wait");	
@@ -903,6 +909,7 @@ int LoadDVDFile( unsigned char *buffer )
 
         return bytes_read_total;
     }
+#endif
 
     /*** SDCard Addition ***/
     if (UseSDCARD) GetSDInfo ();
@@ -1037,6 +1044,7 @@ int OpenDVD()
 }
 
 int OpenFrontSD () {
+#ifdef HW_RVL
     //LoadFromDVD = 1;
     //Memory.LoadROM( "DVD" );
     //Memory.LoadSRAM( "DVD" );
@@ -1081,6 +1089,7 @@ int OpenFrontSD () {
     else  FileSelector ();
 
     return 1;
+#endif
 }
 
 int OpenSD () {
