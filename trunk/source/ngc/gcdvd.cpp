@@ -35,10 +35,10 @@ int haveSDdir = 0;
 
 /* File selection */
 typedef struct {
-	unsigned int offset;
-	unsigned int length;	
-	char flags;
-	char filename[MAXJOLIET];
+    unsigned int offset;
+    unsigned int length;	
+    char flags;
+    char filename[MAXJOLIET];
 }FILEENTRIES;
 int maxfiles = 0;
 int offset = 0;
@@ -75,17 +75,17 @@ int sdslot = 0;
 void dvd_inquiry()
 {
 
-        dvd[0] = 0x2e;
-        dvd[1] = 0;
-        dvd[2] = 0x12000000;
-        dvd[3] = 0;
-        dvd[4] = 0x20;
-        dvd[5] = 0x80000000;
-        dvd[6] = 0x20;
-        dvd[7] = 3;
+    dvd[0] = 0x2e;
+    dvd[1] = 0;
+    dvd[2] = 0x12000000;
+    dvd[3] = 0;
+    dvd[4] = 0x20;
+    dvd[5] = 0x80000000;
+    dvd[6] = 0x20;
+    dvd[7] = 3;
 
-        while( dvd[7] & 1 );
-        DCFlushRange((void *)0x80000000, 32);
+    while( dvd[7] & 1 );
+    DCFlushRange((void *)0x80000000, 32);
 }
 
 /****************************************************************************
@@ -100,16 +100,16 @@ void dvd_inquiry()
 void uselessinquiry ()
 {
 
-  dvd[0] = 0;
-  dvd[1] = 0;
-  dvd[2] = 0x12000000;
-  dvd[3] = 0;
-  dvd[4] = 0x20;
-  dvd[5] = 0x80000000;
-  dvd[6] = 0x20;
-  dvd[7] = 1;
+    dvd[0] = 0;
+    dvd[1] = 0;
+    dvd[2] = 0x12000000;
+    dvd[3] = 0;
+    dvd[4] = 0x20;
+    dvd[5] = 0x80000000;
+    dvd[6] = 0x20;
+    dvd[7] = 1;
 
-  while (dvd[7] & 1);
+    while (dvd[7] & 1);
 
 }
 
@@ -133,16 +133,16 @@ void dvd_unlock()
 
 void dvd_extension()
 {
-        dvd[0] = 0x2E;
-        dvd[1] = 0;
+    dvd[0] = 0x2E;
+    dvd[1] = 0;
 
-        dvd[2] = 0x55010000;
-        dvd[3] = 0;
-        dvd[4] = 0;
-        dvd[5] = 0;
-        dvd[6] = 0;
-        dvd[7] = 1; // enable reading!
-        while (dvd[7] & 1);
+    dvd[2] = 0x55010000;
+    dvd[3] = 0;
+    dvd[4] = 0;
+    dvd[5] = 0;
+    dvd[6] = 0;
+    dvd[7] = 1; // enable reading!
+    while (dvd[7] & 1);
 }
 
 #define DEBUG_STOP_DRIVE 0
@@ -153,69 +153,69 @@ void dvd_extension()
 void dvd_motor_on_extra()
 {
 
-        dvd[0] = 0x2e;
-        dvd[1] = 0;
-        dvd[2] = 0xfe110000 | DEBUG_START_DRIVE | DEBUG_ACCEPT_COPY | DEBUG_DISC_CHECK;
-        dvd[3] = 0;
-        dvd[4] = 0;
-        dvd[5] = 0;
-        dvd[6] = 0;
-        dvd[7] = 1;
-        while ( dvd[7] & 1 );
+    dvd[0] = 0x2e;
+    dvd[1] = 0;
+    dvd[2] = 0xfe110000 | DEBUG_START_DRIVE | DEBUG_ACCEPT_COPY | DEBUG_DISC_CHECK;
+    dvd[3] = 0;
+    dvd[4] = 0;
+    dvd[5] = 0;
+    dvd[6] = 0;
+    dvd[7] = 1;
+    while ( dvd[7] & 1 );
 
 }
 
 void dvd_motor_off( )
 {
-        dvd[0] = 0x2e;
-        dvd[1] = 0;
-        dvd[2] = 0xe3000000;
-        dvd[3] = 0;
-        dvd[4] = 0;
-        dvd[5] = 0;
-        dvd[6] = 0;
-        dvd[7] = 1; // Do immediate
-        while (dvd[7] & 1);
+    dvd[0] = 0x2e;
+    dvd[1] = 0;
+    dvd[2] = 0xe3000000;
+    dvd[3] = 0;
+    dvd[4] = 0;
+    dvd[5] = 0;
+    dvd[6] = 0;
+    dvd[7] = 1; // Do immediate
+    while (dvd[7] & 1);
 
-	/*** PSO Stops blackscreen at reload ***/
-	dvd[0] = 0x14;
-	dvd[1] = 0;
+    /*** PSO Stops blackscreen at reload ***/
+    dvd[0] = 0x14;
+    dvd[1] = 0;
 }
 
 void dvd_setstatus()
 {
-        dvd[0] = 0x2E;
-        dvd[1] = 0;
+    dvd[0] = 0x2E;
+    dvd[1] = 0;
 
-        dvd[2] = 0xee060300;
-        dvd[3] = 0;
-        dvd[4] = 0;
-        dvd[5] = 0;
-        dvd[6] = 0;
-        dvd[7] = 1; // enable reading!
-        while (dvd[7] & 1);
+    dvd[2] = 0xee060300;
+    dvd[3] = 0;
+    dvd[4] = 0;
+    dvd[5] = 0;
+    dvd[6] = 0;
+    dvd[7] = 1; // enable reading!
+    while (dvd[7] & 1);
 }
 
 unsigned int dvd_read_id(void *dst)
 {
-        if ((((int)dst) & 0xC0000000) == 0x80000000) // cached?
-                DCInvalidateRange((void *)dst, 0x20);
+    if ((((int)dst) & 0xC0000000) == 0x80000000) // cached?
+        DCInvalidateRange((void *)dst, 0x20);
 
-        dvd[0] = 0x2E;
-        dvd[1] = 0;
+    dvd[0] = 0x2E;
+    dvd[1] = 0;
 
-        dvd[2] = 0xA8000040;
-        dvd[3] = 0;
-        dvd[4] = 0x20;
-        dvd[5] = (unsigned long)dst;
-        dvd[6] = 0x20;
-        dvd[7] = 3; // enable reading!
+    dvd[2] = 0xA8000040;
+    dvd[3] = 0;
+    dvd[4] = 0x20;
+    dvd[5] = (unsigned long)dst;
+    dvd[6] = 0x20;
+    dvd[7] = 3; // enable reading!
 
-        while (dvd[7] & 1);
+    while (dvd[7] & 1);
 
-        if (dvd[0] & 0x4)
-                return 1;
-        return 0;
+    if (dvd[0] & 0x4)
+        return 1;
+    return 0;
 }
 
 unsigned int dvd_read(void *dst, unsigned int len, unsigned int offset)
@@ -239,7 +239,7 @@ unsigned int dvd_read(void *dst, unsigned int len, unsigned int offset)
         while (dvd[7] & 1);
         DCInvalidateRange((void *)buffer, len);
     } else // Let's not read past end of DVD
-	return 1;
+        return 1;
 
     if (dvd[0] & 0x4)               /* Ensure it has completed */
         return 1;
@@ -255,9 +255,9 @@ void dvd_reset(void)
     unsigned long v = *(unsigned long*)0xcc003024;
     *(unsigned long*)0xcc003024 = (v &~4) | 1;
 
-	mdelay(1);
+    mdelay(1);
 
-	*(unsigned long*)0xcc003024 = v | 5;
+    *(unsigned long*)0xcc003024 = v | 5;
 }
 
 
@@ -271,47 +271,47 @@ static int rootdirlength = 0;
 static int shadowroot, shadowlength; //pdoffset, rdoffset;
 int IsPVD()
 {
-	int sector = 16;
-	
-	IsJoliet = rootdir = 0;
-	
-	/*** Read the ISO section looking for a valid
-	     Primary Volume Decriptor.
-	     Spec says first 8 characters are id ***/
-	while ( sector < 32 ) {
+    int sector = 16;
 
-		dvd_read( &readbuffer, 2048, sector << 11 );
-		if ( memcmp( &readbuffer, "\2CD001\1", 8 ) == 0 ) {
-			memcpy(&rootdir, &readbuffer[PVDROOT + EXTENT], 4);
-			memcpy(&rootdirlength, &readbuffer[PVDROOT + FILE_LENGTH], 4);
-			IsJoliet = 2;
-			break;
-		}
+    IsJoliet = rootdir = 0;
 
-		sector++;
-	}
+    /*** Read the ISO section looking for a valid
+      Primary Volume Decriptor.
+      Spec says first 8 characters are id ***/
+    while ( sector < 32 ) {
 
-	if ( IsJoliet == 0 ) {
-		sector = 16;
+        dvd_read( &readbuffer, 2048, sector << 11 );
+        if ( memcmp( &readbuffer, "\2CD001\1", 8 ) == 0 ) {
+            memcpy(&rootdir, &readbuffer[PVDROOT + EXTENT], 4);
+            memcpy(&rootdirlength, &readbuffer[PVDROOT + FILE_LENGTH], 4);
+            IsJoliet = 2;
+            break;
+        }
 
-		while ( sector < 32 ) {
+        sector++;
+    }
 
-			if ( memcmp( &readbuffer, "\1CD001\1", 8 ) == 0 ) {
-				memcpy(&rootdir, &readbuffer[PVDROOT + EXTENT], 4);
-				memcpy(&rootdirlength, &readbuffer[PVDROOT + FILE_LENGTH], 4);
-				IsJoliet = 1;
-				break;
-			}
+    if ( IsJoliet == 0 ) {
+        sector = 16;
 
-			sector++;
-		}
-	}
+        while ( sector < 32 ) {
 
-	rootdir <<= 11;
-	shadowroot = rootdir;
-	shadowlength = rootdirlength;
+            if ( memcmp( &readbuffer, "\1CD001\1", 8 ) == 0 ) {
+                memcpy(&rootdir, &readbuffer[PVDROOT + EXTENT], 4);
+                memcpy(&rootdirlength, &readbuffer[PVDROOT + FILE_LENGTH], 4);
+                IsJoliet = 1;
+                break;
+            }
 
-	return IsJoliet;	
+            sector++;
+        }
+    }
+
+    rootdir <<= 11;
+    shadowroot = rootdir;
+    shadowlength = rootdirlength;
+
+    return IsJoliet;	
 }
 
 /****************************************************************************
@@ -322,80 +322,80 @@ int IsPVD()
 static int diroffset = 0;
 int getfiles( int filecount )
 {
-	char fname[512];
-	char *ptr;
-	char *filename;
-	char *filenamelength;
-	char *rr;
-	int j;
+    char fname[512];
+    char *ptr;
+    char *filename;
+    char *filenamelength;
+    char *rr;
+    int j;
 
-	/*** Do some basic checks ***/
-	if ( filecount == MAXFILES ) return 0;
-	if ( diroffset >= 2048 ) return 0;
+    /*** Do some basic checks ***/
+    if ( filecount == MAXFILES ) return 0;
+    if ( diroffset >= 2048 ) return 0;
 
-	/*** Now decode this entry ***/
-	if ( readbuffer[diroffset] != 0 )
-	{
-		/* Update offsets into sector buffer */
-		ptr = (char *)&readbuffer[0];
-		ptr += diroffset;		
-		filename = ptr + FILENAME;
-		filenamelength = ptr + FILENAME_LENGTH;
-		
-		/* Check for wrap round - illegal in ISO spec,
-		 * but certain crap writers do it! */
-		if ( diroffset + readbuffer[diroffset] > 2048 ) return 0;
+    /*** Now decode this entry ***/
+    if ( readbuffer[diroffset] != 0 )
+    {
+        /* Update offsets into sector buffer */
+        ptr = (char *)&readbuffer[0];
+        ptr += diroffset;		
+        filename = ptr + FILENAME;
+        filenamelength = ptr + FILENAME_LENGTH;
 
-		if ( *filenamelength ) {
+        /* Check for wrap round - illegal in ISO spec,
+         * but certain crap writers do it! */
+        if ( diroffset + readbuffer[diroffset] > 2048 ) return 0;
 
-			memset(&fname, 0, 512);
+        if ( *filenamelength ) {
 
-			/*** Return the values needed ***/
-			if ( IsJoliet == 1 ) strcpy(fname, filename);
-			else {			
-				for ( j = 0; j < ( *filenamelength >> 1 ); j++ ) {
-					fname[j] = filename[j*2+1];
-				}
+            memset(&fname, 0, 512);
 
-				fname[j] = 0;
-			
-				if ( strlen(fname) >= MAXJOLIET ) fname[MAXJOLIET-1] = 0;
-				if ( strlen(fname) == 0 ) fname[0] = filename[0];
-			}
+            /*** Return the values needed ***/
+            if ( IsJoliet == 1 ) strcpy(fname, filename);
+            else {			
+                for ( j = 0; j < ( *filenamelength >> 1 ); j++ ) {
+                    fname[j] = filename[j*2+1];
+                }
 
-			if ( strlen(fname) == 0 ) strcpy(fname,"ROOT");
-			else {
-				if ( fname[0] == 1 ) strcpy(fname,"..");
-				else{
-					//fname[ *filenamelength ] = 0;
-					/*
-					* Move *filenamelength to t,
-					* Only to stop gcc warning for noobs :)
-					*/
-					int t = *filenamelength;
-					fname[t] = 0;
-				}
-			}
-				
-			/** Rockridge Check **/ /*** Remove any trailing ;1 from ISO name ***/
-			rr = strstr (fname, ";"); //if ( fname[ strlen(fname) - 2 ] == ';' )
-			if (rr != NULL) *rr = 0;  //fname[ strlen(fname) - 2 ] = 0;*/
+                fname[j] = 0;
 
-			strcpy(filelist[filecount].filename, fname);
-			memcpy(&filelist[filecount].offset, &readbuffer[diroffset + EXTENT], 4);
-			memcpy(&filelist[filecount].length, &readbuffer[diroffset + FILE_LENGTH], 4);
-			memcpy(&filelist[filecount].flags, &readbuffer[diroffset + FILE_FLAGS], 1);
+                if ( strlen(fname) >= MAXJOLIET ) fname[MAXJOLIET-1] = 0;
+                if ( strlen(fname) == 0 ) fname[0] = filename[0];
+            }
 
-			filelist[filecount].offset <<= 11;
-			filelist[filecount].flags = filelist[filecount].flags & 2;
+            if ( strlen(fname) == 0 ) strcpy(fname,"ROOT");
+            else {
+                if ( fname[0] == 1 ) strcpy(fname,"..");
+                else{
+                    //fname[ *filenamelength ] = 0;
+                    /*
+                     * Move *filenamelength to t,
+                     * Only to stop gcc warning for noobs :)
+                     */
+                    int t = *filenamelength;
+                    fname[t] = 0;
+                }
+            }
 
-			/*** Prepare for next entry ***/
-			diroffset += readbuffer[diroffset];
-			
-			return 1;
-		} 		
-	}
-	return 0;
+            /** Rockridge Check **/ /*** Remove any trailing ;1 from ISO name ***/
+            rr = strstr (fname, ";"); //if ( fname[ strlen(fname) - 2 ] == ';' )
+            if (rr != NULL) *rr = 0;  //fname[ strlen(fname) - 2 ] = 0;*/
+
+            strcpy(filelist[filecount].filename, fname);
+            memcpy(&filelist[filecount].offset, &readbuffer[diroffset + EXTENT], 4);
+            memcpy(&filelist[filecount].length, &readbuffer[diroffset + FILE_LENGTH], 4);
+            memcpy(&filelist[filecount].flags, &readbuffer[diroffset + FILE_FLAGS], 1);
+
+            filelist[filecount].offset <<= 11;
+            filelist[filecount].flags = filelist[filecount].flags & 2;
+
+            /*** Prepare for next entry ***/
+            diroffset += readbuffer[diroffset];
+
+            return 1;
+        } 		
+    }
+    return 0;
 }
 
 /****************************************************************************
@@ -406,35 +406,35 @@ int getfiles( int filecount )
 
 int parsedir()
 {
-	int pdlength;
-	int pdoffset;
-	int rdoffset;
-	int len = 0;
-	int filecount = 0;
+    int pdlength;
+    int pdoffset;
+    int rdoffset;
+    int len = 0;
+    int filecount = 0;
 
-	pdoffset = rdoffset = rootdir;
-	pdlength = rootdirlength;
-	filecount = 0;
+    pdoffset = rdoffset = rootdir;
+    pdlength = rootdirlength;
+    filecount = 0;
 
-	/*** Clear any existing values ***/
-	memset(&filelist, 0, sizeof(FILEENTRIES) * MAXFILES);
+    /*** Clear any existing values ***/
+    memset(&filelist, 0, sizeof(FILEENTRIES) * MAXFILES);
 
-	/*** Get as many files as possible ***/			
-	while ( len < pdlength )
-	{
-		if (dvd_read (&readbuffer, 2048, pdoffset) == 0) return 0;
-		//dvd_read(&readbuffer, 2048, pdoffset);
-		diroffset = 0;
+    /*** Get as many files as possible ***/			
+    while ( len < pdlength )
+    {
+        if (dvd_read (&readbuffer, 2048, pdoffset) == 0) return 0;
+        //dvd_read(&readbuffer, 2048, pdoffset);
+        diroffset = 0;
 
-		while ( getfiles( filecount ) )
-		{
-			if ( filecount < MAXFILES )	filecount++;
-		}
+        while ( getfiles( filecount ) )
+        {
+            if ( filecount < MAXFILES )	filecount++;
+        }
 
-		len += 2048;
-		pdoffset = rdoffset + len;
-	}
-	return filecount;
+        len += 2048;
+        pdoffset = rdoffset + len;
+    }
+    return filecount;
 }
 
 /***************************************************************************
@@ -442,53 +442,53 @@ int parsedir()
  ***************************************************************************/ 
 int updateSDdirname()
 {
-  int size=0;
-  char *test;
-  char temp[1024];
+    int size=0;
+    char *test;
+    char temp[1024];
 
-   /* current directory doesn't change */
-   if (strcmp(filelist[selection].filename,".") == 0) return 0; 
-   
-   /* go up to parent directory */
-   else if (strcmp(filelist[selection].filename,"..") == 0) 
-   {
-     /* determine last subdirectory namelength */
-     sprintf(temp,"%s",rootSDdir);
-     test= strtok(temp,"\\");
-     while (test != NULL)
-     { 
-       size = strlen(test);
-       test = strtok(NULL,"\\");
-     }
-  
-     /* remove last subdirectory name */
-     size = strlen(rootSDdir) - size - 1;
-     rootSDdir[size] = 0;
+    /* current directory doesn't change */
+    if (strcmp(filelist[selection].filename,".") == 0) return 0; 
 
-	 /* handles root name */
-	 if (strcmp(rootSDdir, sdslot ? "dev1:":"dev0:") == 0)sprintf(rootSDdir,"dev%d:\\snes9x\\..", sdslot); 
-	 
-     return 1;
-   }
-   else
-   {
-     /* test new directory namelength */
-     if ((strlen(rootSDdir)+1+strlen(filelist[selection].filename)) < SDCARD_MAX_PATH_LEN) 
-     {
-       /* handles root name */
-	   //sprintf(tmpCompare, "dev%d:\\snes9x\\..",choosenSDSlot);
-	   //if (strcmp(rootSDdir, tmpCompare) == 0) sprintf(rootSDdir,"dev%d:",choosenSDSlot);
-		if (strcmp(rootSDdir, sdslot ? "dev1:\\snes9x\\.." : "dev0:\\snes9x\\..") == 0) sprintf(rootSDdir,"dev%d:",sdslot);
-	 
-       /* update current directory name */
-       sprintf(rootSDdir, "%s\\%s",rootSDdir, filelist[selection].filename);
-       return 1;
-     }
-     else
-     {
-         WaitPrompt ("Dirname is too long !"); 
-         return -1;
-     }
+    /* go up to parent directory */
+    else if (strcmp(filelist[selection].filename,"..") == 0) 
+    {
+        /* determine last subdirectory namelength */
+        sprintf(temp,"%s",rootSDdir);
+        test= strtok(temp,"\\");
+        while (test != NULL)
+        { 
+            size = strlen(test);
+            test = strtok(NULL,"\\");
+        }
+
+        /* remove last subdirectory name */
+        size = strlen(rootSDdir) - size - 1;
+        rootSDdir[size] = 0;
+
+        /* handles root name */
+        if (strcmp(rootSDdir, sdslot ? "dev1:":"dev0:") == 0)sprintf(rootSDdir,"dev%d:\\snes9x\\..", sdslot); 
+
+        return 1;
+    }
+    else
+    {
+        /* test new directory namelength */
+        if ((strlen(rootSDdir)+1+strlen(filelist[selection].filename)) < SDCARD_MAX_PATH_LEN) 
+        {
+            /* handles root name */
+            //sprintf(tmpCompare, "dev%d:\\snes9x\\..",choosenSDSlot);
+            //if (strcmp(rootSDdir, tmpCompare) == 0) sprintf(rootSDdir,"dev%d:",choosenSDSlot);
+            if (strcmp(rootSDdir, sdslot ? "dev1:\\snes9x\\.." : "dev0:\\snes9x\\..") == 0) sprintf(rootSDdir,"dev%d:",sdslot);
+
+            /* update current directory name */
+            sprintf(rootSDdir, "%s\\%s",rootSDdir, filelist[selection].filename);
+            return 1;
+        }
+        else
+        {
+            WaitPrompt ("Dirname is too long !"); 
+            return -1;
+        }
     } 
 }
 
@@ -497,39 +497,39 @@ int updateSDdirname()
  ***************************************************************************/ 
 int parseSDdirectory()
 {
-  int entries = 0;
-  int nbfiles = 0;
-  int numstored = 0;
-  DIR *sddir = NULL;
+    int entries = 0;
+    int nbfiles = 0;
+    int numstored = 0;
+    DIR *sddir = NULL;
 
-  /* initialize selection */
-  selection = offset = 0;
-  
-  /* Get a list of files from the actual root directory */ 
-  entries = SDCARD_ReadDir (rootSDdir, &sddir);
-  
-  if (entries < 0) entries = 0;   
-  if (entries > MAXFILES) entries = MAXFILES;
-    
-  /* Move to DVD structure - this is required for the file selector */ 
-  while (entries)
-  {
-      if (strcmp((const char*)sddir[nbfiles].fname, ".") != 0) { // Skip "." directory
-          memset (&filelist[numstored], 0, sizeof (FILEENTRIES));
-          strncpy(filelist[numstored].filename,(const char*)sddir[nbfiles].fname,MAXJOLIET);
-          filelist[numstored].filename[MAXJOLIET-1] = 0;
-          filelist[numstored].length = sddir[nbfiles].fsize;
-          filelist[numstored].flags = (char)(sddir[nbfiles].fattr & SDCARD_ATTR_DIR);
-          numstored++;
-      }
-      nbfiles++;
-      entries--;
-  }
-  
-  /*** Release memory ***/
-  free(sddir);
-  
-  return numstored;
+    /* initialize selection */
+    selection = offset = 0;
+
+    /* Get a list of files from the actual root directory */ 
+    entries = SDCARD_ReadDir (rootSDdir, &sddir);
+
+    if (entries < 0) entries = 0;   
+    if (entries > MAXFILES) entries = MAXFILES;
+
+    /* Move to DVD structure - this is required for the file selector */ 
+    while (entries)
+    {
+        if (strcmp((const char*)sddir[nbfiles].fname, ".") != 0) { // Skip "." directory
+            memset (&filelist[numstored], 0, sizeof (FILEENTRIES));
+            strncpy(filelist[numstored].filename,(const char*)sddir[nbfiles].fname,MAXJOLIET);
+            filelist[numstored].filename[MAXJOLIET-1] = 0;
+            filelist[numstored].length = sddir[nbfiles].fsize;
+            filelist[numstored].flags = (char)(sddir[nbfiles].fattr & SDCARD_ATTR_DIR);
+            numstored++;
+        }
+        nbfiles++;
+        entries--;
+    }
+
+    /*** Release memory ***/
+    free(sddir);
+
+    return numstored;
 }
 
 /****************************************************************************
@@ -540,31 +540,31 @@ int parseSDdirectory()
 
 void ShowFiles( int offset, int selection )
 {
-	int i,j;
-	char text[80];
+    int i,j;
+    char text[80];
 
-	ClearScreen();
-	
-	j = 0;
-	for ( i = offset; i < ( offset + PAGESIZE ) && ( i < maxfiles ); i++ )
-	{
-		if ( filelist[i].flags ) {
-			strcpy(text,"[");
-			strcat(text, filelist[i].filename);
-			strcat(text,"]");
-		} else
-			strcpy(text, filelist[i].filename);
+    ClearScreen();
 
-		
-		if ( j == ( selection - offset ) )
-			writex( CentreTextPosition(text), ( j * font_height ) + 32,	GetTextWidth(text), font_height, text, blit_lookup_inv );
-		else
+    j = 0;
+    for ( i = offset; i < ( offset + PAGESIZE ) && ( i < maxfiles ); i++ )
+    {
+        if ( filelist[i].flags ) {
+            strcpy(text,"[");
+            strcat(text, filelist[i].filename);
+            strcat(text,"]");
+        } else
+            strcpy(text, filelist[i].filename);
+
+
+        if ( j == ( selection - offset ) )
+            writex( CentreTextPosition(text), ( j * font_height ) + 32,	GetTextWidth(text), font_height, text, blit_lookup_inv );
+        else
             writex( CentreTextPosition(text), ( j * font_height ) + 32, GetTextWidth(text), font_height, text, blit_lookup );
 
-		j++;		
-	}
+        j++;		
+    }
 
-	SetScreen();
+    SetScreen();
 
 }
 
@@ -578,109 +578,109 @@ extern int showspinner;
 
 void FileSelector()
 {
-	short p=0;
-	signed char a;
-	int haverom = 0;
-	int redraw = 1;
+    short p=0;
+    signed char a;
+    int haverom = 0;
+    int redraw = 1;
 
-	showspinner = 0;
+    showspinner = 0;
 
-	while ( haverom == 0 )
-	{
-		if ( redraw ) ShowFiles( offset, selection );
-		
-		redraw = 0;
-		p = PAD_ButtonsDown(0);
-		a = PAD_StickY(0);
-		
-		if (p & PAD_BUTTON_B) return;
-		
-		if ( ( p & PAD_BUTTON_DOWN ) || ( a < -PADCAL ) ){		
-			selection++;
-			if ( selection == maxfiles ) selection = offset = 0;		
-			if ( ( selection - offset ) >= PAGESIZE ) offset += PAGESIZE;
-			redraw = 1;
-		} // End of down
-		if ( ( p & PAD_BUTTON_UP ) || ( a > PADCAL ) )
-		{			
-			selection--;
-			if ( selection < 0 ){
-				selection = maxfiles - 1;
-				offset = selection - PAGESIZE + 1;
-			}
-			if ( selection < offset ) offset -= PAGESIZE;
-			if ( offset < 0 ) offset = 0;			
-			redraw = 1;
-		} // End of Up
+    while ( haverom == 0 )
+    {
+        if ( redraw ) ShowFiles( offset, selection );
 
-		if (( p & PAD_BUTTON_LEFT ) || (p & PAD_TRIGGER_L))
-		{
-			/*** Go back a page ***/
-			selection -= PAGESIZE;
-			if ( selection < 0 ) {
-				selection = maxfiles - 1;
-				offset = selection-PAGESIZE + 1;
-			}
-			if ( selection < offset ) offset -= PAGESIZE;
-			if ( offset < 0 ) offset = 0;	
-			redraw = 1;
-		}
+        redraw = 0;
+        p = PAD_ButtonsDown(0);
+        a = PAD_StickY(0);
 
-		if (( p & PAD_BUTTON_RIGHT ) || (p & PAD_TRIGGER_R))
-		{
-			/*** Go forward a page ***/
-			selection += PAGESIZE;
-			if ( selection > maxfiles - 1 ) selection = offset = 0;
-			if ( ( selection - offset ) >= PAGESIZE ) offset += PAGESIZE;
-			redraw = 1;
-		}
+        if (p & PAD_BUTTON_B) return;
 
-		if ( p & PAD_BUTTON_A ) {
-			
-			if ( filelist[selection].flags )	/*** This is directory ***/
-			{
-				if (UseSDCARD)
-				{
-					/* update current directory and set new entry list if directory has changed */
-					int status = updateSDdirname();
-					if (status == 1)
-					{							
-						maxfiles = parseSDdirectory();
-						if (!maxfiles)
-						{
-						  WaitPrompt ("Error reading directory !");
-		                  haverom   = 1; // quit SD menu
-                          haveSDdir = 0; // reset everything at next access
-						}
-					}
-					else if (status == -1)
-					{
-					  haverom   = 1; // quit SD menu
-                      haveSDdir = 0; // reset everything at next access
-					}
-				}
-				else
-				{
-				   rootdir = filelist[selection].offset;
-				   rootdirlength = filelist[selection].length;
-				   offset = selection = 0;
-				   maxfiles = parsedir();
-				}
-			}
-			else
-			{
-				rootdir = filelist[selection].offset;
-				rootdirlength = filelist[selection].length;
-				/*** Put ROM Load Routine Here :) ***/
-				LoadFromDVD = 1;
-				Memory.LoadROM( "DVD" );
-				Memory.LoadSRAM( "DVD" );
-				haverom = 1;
-			}
-			redraw = 1;
-		}
-	}
-	showspinner = 1;
+        if ( ( p & PAD_BUTTON_DOWN ) || ( a < -PADCAL ) ){		
+            selection++;
+            if ( selection == maxfiles ) selection = offset = 0;		
+            if ( ( selection - offset ) >= PAGESIZE ) offset += PAGESIZE;
+            redraw = 1;
+        } // End of down
+        if ( ( p & PAD_BUTTON_UP ) || ( a > PADCAL ) )
+        {			
+            selection--;
+            if ( selection < 0 ){
+                selection = maxfiles - 1;
+                offset = selection - PAGESIZE + 1;
+            }
+            if ( selection < offset ) offset -= PAGESIZE;
+            if ( offset < 0 ) offset = 0;			
+            redraw = 1;
+        } // End of Up
+
+        if (( p & PAD_BUTTON_LEFT ) || (p & PAD_TRIGGER_L))
+        {
+            /*** Go back a page ***/
+            selection -= PAGESIZE;
+            if ( selection < 0 ) {
+                selection = maxfiles - 1;
+                offset = selection-PAGESIZE + 1;
+            }
+            if ( selection < offset ) offset -= PAGESIZE;
+            if ( offset < 0 ) offset = 0;	
+            redraw = 1;
+        }
+
+        if (( p & PAD_BUTTON_RIGHT ) || (p & PAD_TRIGGER_R))
+        {
+            /*** Go forward a page ***/
+            selection += PAGESIZE;
+            if ( selection > maxfiles - 1 ) selection = offset = 0;
+            if ( ( selection - offset ) >= PAGESIZE ) offset += PAGESIZE;
+            redraw = 1;
+        }
+
+        if ( p & PAD_BUTTON_A ) {
+
+            if ( filelist[selection].flags )	/*** This is directory ***/
+            {
+                if (UseSDCARD)
+                {
+                    /* update current directory and set new entry list if directory has changed */
+                    int status = updateSDdirname();
+                    if (status == 1)
+                    {							
+                        maxfiles = parseSDdirectory();
+                        if (!maxfiles)
+                        {
+                            WaitPrompt ("Error reading directory !");
+                            haverom   = 1; // quit SD menu
+                            haveSDdir = 0; // reset everything at next access
+                        }
+                    }
+                    else if (status == -1)
+                    {
+                        haverom   = 1; // quit SD menu
+                        haveSDdir = 0; // reset everything at next access
+                    }
+                }
+                else
+                {
+                    rootdir = filelist[selection].offset;
+                    rootdirlength = filelist[selection].length;
+                    offset = selection = 0;
+                    maxfiles = parsedir();
+                }
+            }
+            else
+            {
+                rootdir = filelist[selection].offset;
+                rootdirlength = filelist[selection].length;
+                /*** Put ROM Load Routine Here :) ***/
+                LoadFromDVD = 1;
+                Memory.LoadROM( "DVD" );
+                Memory.LoadSRAM( "DVD" );
+                haverom = 1;
+            }
+            redraw = 1;
+        }
+    }
+    showspinner = 1;
 }
 
 /****************************************************************************
@@ -688,51 +688,51 @@ void FileSelector()
  ****************************************************************************/
 int LoadDVDFile( unsigned char *buffer )
 {
-	int offset;
-	int blocks;
-	int i;
-	int discoffset;
+    int offset;
+    int blocks;
+    int i;
+    int discoffset;
 
-	/*** SDCard Addition ***/
+    /*** SDCard Addition ***/
     if (UseSDCARD) GetSDInfo ();
-	if (rootdirlength == 0)  return 0;
+    if (rootdirlength == 0)  return 0;
 
-	/*** How many 2k blocks to read ***/
-	blocks = rootdirlength / 2048;
-	offset = 0;
-	discoffset = rootdir;
+    /*** How many 2k blocks to read ***/
+    blocks = rootdirlength / 2048;
+    offset = 0;
+    discoffset = rootdir;
 
-	ShowAction("Loading ... Wait");	
-	if (UseSDCARD) SDCARD_ReadFile (filehandle, &readbuffer, 2048);  
-	else dvd_read(&readbuffer, 2048, discoffset);
-	
-	if ( isZipFile() == false )
-	{
-      if (UseSDCARD) SDCARD_SeekFile (filehandle, 0, SDCARD_SEEK_SET);
-		for ( i = 0; i < blocks; i++ )
-		{
-			if (UseSDCARD) SDCARD_ReadFile (filehandle, &readbuffer, 2048);	  
-			else dvd_read(&readbuffer, 2048, discoffset);
-			memcpy(&buffer[offset], &readbuffer, 2048);
-			offset += 2048;
-			discoffset += 2048;
-		}
-	
-		/*** And final cleanup ***/
-		if( rootdirlength % 2048 )
-		{
-			i = rootdirlength % 2048;
-			if (UseSDCARD) SDCARD_ReadFile (filehandle, &readbuffer, i);	  
-			else dvd_read(&readbuffer, 2048, discoffset);
-			memcpy(&buffer[offset], &readbuffer, i);
-		}
-	} 
-	else {		
-		return unzipDVDFile( buffer, discoffset, rootdirlength);
-	}
-	  if (UseSDCARD) SDCARD_CloseFile (filehandle);
+    ShowAction("Loading ... Wait");	
+    if (UseSDCARD) SDCARD_ReadFile (filehandle, &readbuffer, 2048);  
+    else dvd_read(&readbuffer, 2048, discoffset);
 
-	return rootdirlength;
+    if ( isZipFile() == false )
+    {
+        if (UseSDCARD) SDCARD_SeekFile (filehandle, 0, SDCARD_SEEK_SET);
+        for ( i = 0; i < blocks; i++ )
+        {
+            if (UseSDCARD) SDCARD_ReadFile (filehandle, &readbuffer, 2048);	  
+            else dvd_read(&readbuffer, 2048, discoffset);
+            memcpy(&buffer[offset], &readbuffer, 2048);
+            offset += 2048;
+            discoffset += 2048;
+        }
+
+        /*** And final cleanup ***/
+        if( rootdirlength % 2048 )
+        {
+            i = rootdirlength % 2048;
+            if (UseSDCARD) SDCARD_ReadFile (filehandle, &readbuffer, i);	  
+            else dvd_read(&readbuffer, 2048, discoffset);
+            memcpy(&buffer[offset], &readbuffer, i);
+        }
+    } 
+    else {		
+        return unzipDVDFile( buffer, discoffset, rootdirlength);
+    }
+    if (UseSDCARD) SDCARD_CloseFile (filehandle);
+
+    return rootdirlength;
 }
 
 /****************************************************************************
@@ -747,124 +747,124 @@ static int havedir = 0;
 int OpenDVD()
 {
 
-	int i, j;
-	int driveid;
-	
-	haveSDdir = 0;
-	
-	/*** Get Drive Type ***/
-	dvd_inquiry();
-	driveid = (int)inquiry[2];
+    int i, j;
+    int driveid;
 
-	memset(&readbuffer, 0x80, 2048);
-	dvd_read(&readbuffer, 2048,0);
+    haveSDdir = 0;
 
-	for ( i = j = 0; i < 2048; i++ )
-		j += readbuffer[i];
+    /*** Get Drive Type ***/
+    dvd_inquiry();
+    driveid = (int)inquiry[2];
 
-	if (j) {
-		if ( IsXenoGCImage( (char *)&readbuffer ) )
-			j = 0;
-	}
+    memset(&readbuffer, 0x80, 2048);
+    dvd_read(&readbuffer, 2048,0);
 
-	/*** Was there any data in sector 0 ? ***/
-	// do not do all this stuff here if we are running on a Wii
-	// because the modchip will take care of this.
-	if (j) {
-		havedir = offset = selection = 0;
-		/*** Yes - so start swap sequence ***/
-		ShowAction("Stopping DVD ... Wait");
-		dvd_motor_off();
-		WaitPrompt("Insert an ISO 9660 DVD");
-		ShowAction("Resetting DVD ... Wait");
-		dvd_reset();
+    for ( i = j = 0; i < 2048; i++ )
+        j += readbuffer[i];
 
-		/*** Now the fun begins
-		     This is essentially the cactus implementation from gc-linux
-		     sequence of events. There may well be a better way to do it
-		     from inside libogc, but no documentation is available. ***/
+    if (j) {
+        if ( IsXenoGCImage( (char *)&readbuffer ) )
+            j = 0;
+    }
 
-		/*** Reset the DVD Drive, to enable the firmware update ***/
-		/*** Reset
-		     Unlock
-		     SendCode
-		     Enable Extension
-		     Unlock
-		     Motor On
-		     SetStatus
-		     ReadID ***/
-		
-		ShowAction("Sending Drive Code ... Wait");	
-		dvd_unlock();
-		SendDriveCode(driveid);
-		dvd_extension();
-		dvd_unlock();
-		ShowAction("Mounting DVD ... Wait");
-		dvd_motor_on_extra();
-		dvd_setstatus();
-		dvd_read_id((void *)0x80000000);
-	}
+    /*** Was there any data in sector 0 ? ***/
+    // do not do all this stuff here if we are running on a Wii
+    // because the modchip will take care of this.
+    if (j) {
+        havedir = offset = selection = 0;
+        /*** Yes - so start swap sequence ***/
+        ShowAction("Stopping DVD ... Wait");
+        dvd_motor_off();
+        WaitPrompt("Insert an ISO 9660 DVD");
+        ShowAction("Resetting DVD ... Wait");
+        dvd_reset();
 
-	/*** At this point I should have an unlocked DVD ... so let's do the ISO ***/
-	if ( havedir != 1 ) {
-		if ( IsPVD() )
-		{
-			/*** Have a valid PVD, so start reading directory entries ***/
-			maxfiles = parsedir();	
-			if ( maxfiles ) {
-				offset = selection = 0;
-				FileSelector();
-				havedir = 1;
-			}
-		} else {
-			return 0;
-		}
-	} else 
-		FileSelector();
+        /*** Now the fun begins
+          This is essentially the cactus implementation from gc-linux
+          sequence of events. There may well be a better way to do it
+          from inside libogc, but no documentation is available. ***/
 
-	return 1;		
+        /*** Reset the DVD Drive, to enable the firmware update ***/
+        /*** Reset
+          Unlock
+          SendCode
+          Enable Extension
+          Unlock
+          Motor On
+          SetStatus
+          ReadID ***/
+
+        ShowAction("Sending Drive Code ... Wait");	
+        dvd_unlock();
+        SendDriveCode(driveid);
+        dvd_extension();
+        dvd_unlock();
+        ShowAction("Mounting DVD ... Wait");
+        dvd_motor_on_extra();
+        dvd_setstatus();
+        dvd_read_id((void *)0x80000000);
+    }
+
+    /*** At this point I should have an unlocked DVD ... so let's do the ISO ***/
+    if ( havedir != 1 ) {
+        if ( IsPVD() )
+        {
+            /*** Have a valid PVD, so start reading directory entries ***/
+            maxfiles = parsedir();	
+            if ( maxfiles ) {
+                offset = selection = 0;
+                FileSelector();
+                havedir = 1;
+            }
+        } else {
+            return 0;
+        }
+    } else 
+        FileSelector();
+
+    return 1;		
 }
 
 int OpenSD () {
-	
-  UseSDCARD = 1;
-  char msg[128];
-  
-  if (choosenSDSlot != sdslot) haveSDdir = 0;
-  
-  if (haveSDdir == 0)
-  {
-     /* don't mess with DVD entries */
-	 havedir = 0;
- 
-     /* Reset SDCARD root directory */
-	 sprintf(rootSDdir,"dev%d:\\snes9x\\roms",choosenSDSlot);
-     sdslot = choosenSDSlot;
- 
-	 /* Parse initial root directory and get entries list */
-	 ShowAction("Reading Directory ...");
-     if ((maxfiles = parseSDdirectory ()))
-	 {
-		sprintf (msg, "Found %d entries", maxfiles);
-		ShowAction(msg);
-		/* Select an entry */
-		FileSelector ();
-    
-		/* memorize last entries list, actual root directory and selection for next access */
-		haveSDdir = 1;
-	 }
-	 else
-     {
-        /* no entries found */
-		sprintf (msg, "Error reading dev%d:\\snes9x\\roms", choosenSDSlot);
-	    WaitPrompt (msg);
-        return 0;
-	 }
-  }
-  /* Retrieve previous entries list and made a new selection */
-  else  FileSelector ();
-  
-  return 1;
+
+    UseSDCARD = 1;
+    char msg[128];
+
+    if (choosenSDSlot != sdslot) haveSDdir = 0;
+
+    if (haveSDdir == 0)
+    {
+        /* don't mess with DVD entries */
+        havedir = 0;
+
+        /* Reset SDCARD root directory */
+        sprintf(rootSDdir,"dev%d:\\snes9x\\roms",choosenSDSlot);
+        sdslot = choosenSDSlot;
+
+        /* Parse initial root directory and get entries list */
+        ShowAction("Reading Directory ...");
+        if ((maxfiles = parseSDdirectory ()))
+        {
+            sprintf (msg, "Found %d entries", maxfiles);
+            ShowAction(msg);
+            /* Select an entry */
+            FileSelector ();
+
+            /* memorize last entries list, actual root directory and selection for next access */
+            haveSDdir = 1;
+        }
+        else
+        {
+            /* no entries found */
+            sprintf (msg, "Error reading dev%d:\\snes9x\\roms", choosenSDSlot);
+            WaitPrompt (msg);
+            return 0;
+        }
+    }
+    /* Retrieve previous entries list and made a new selection */
+    else  FileSelector ();
+
+    return 1;
 }
 
 
@@ -873,24 +873,24 @@ int OpenSD () {
  ****************************************************************************/ 
 void GetSDInfo () 
 {
-  char fname[SDCARD_MAX_PATH_LEN];
-  rootdirlength = 0;
-  
+    char fname[SDCARD_MAX_PATH_LEN];
+    rootdirlength = 0;
+
     /* Check filename length */
-  if ((strlen(rootSDdir)+1+strlen(filelist[selection].filename)) < SDCARD_MAX_PATH_LEN)
-     sprintf(fname, "%s\\%s",rootSDdir,filelist[selection].filename); 
-  
-  else
-  {
-    WaitPrompt ("Maximum Filename Length reached !"); 
-    haveSDdir = 0; // reset everything before next access
-  }
-  
-  filehandle = SDCARD_OpenFile (fname, "rb");
-  if (filehandle == NULL)
+    if ((strlen(rootSDdir)+1+strlen(filelist[selection].filename)) < SDCARD_MAX_PATH_LEN)
+        sprintf(fname, "%s\\%s",rootSDdir,filelist[selection].filename); 
+
+    else
     {
-      WaitPrompt ("Unable to open file!");
-      return;
+        WaitPrompt ("Maximum Filename Length reached !"); 
+        haveSDdir = 0; // reset everything before next access
     }
-  rootdirlength = SDCARD_GetFileSize (filehandle);
+
+    filehandle = SDCARD_OpenFile (fname, "rb");
+    if (filehandle == NULL)
+    {
+        WaitPrompt ("Unable to open file!");
+        return;
+    }
+    rootdirlength = SDCARD_GetFileSize (filehandle);
 }
