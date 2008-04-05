@@ -209,7 +209,7 @@ void Welcome()
 
         SetScreen();
 
-        if (PAD_ButtonsDown(0) & (PAD_BUTTON_A || PAD_BUTTON_B) ) quit = 1;
+        if (PAD_ButtonsDown(0) & (PAD_BUTTON_A | PAD_BUTTON_B) ) quit = 1;
     }
 
     showspinner = 1;
@@ -254,7 +254,7 @@ void credits()
 
         SetScreen();
 
-        if (PAD_ButtonsDown(0) & (PAD_BUTTON_A || PAD_BUTTON_B) ) quit = 1;
+        if (PAD_ButtonsDown(0) & (PAD_BUTTON_A | PAD_BUTTON_B) ) quit = 1;
     }
 
     showspinner = 1;
