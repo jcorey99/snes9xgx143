@@ -210,8 +210,7 @@ void Welcome()
         write_font( CentreTextPosition(work), 400, work);
 
         SetScreen();
-
-        if (PAD_ButtonsDown(0) & (PAD_BUTTON_A || PAD_BUTTON_B) ) quit = 1;
+        if (PAD_ButtonsDown(0) & (PAD_BUTTON_A | PAD_BUTTON_B) ) quit = 1;
     }
 
     showspinner = 1;
@@ -256,7 +255,7 @@ void credits()
 
         SetScreen();
 
-        if (PAD_ButtonsDown(0) & (PAD_BUTTON_A || PAD_BUTTON_B) ) quit = 1;
+        if (PAD_ButtonsDown(0) & (PAD_BUTTON_A | PAD_BUTTON_B) ) quit = 1;
     }
 
     showspinner = 1;
@@ -672,8 +671,14 @@ int MediaSelect() {
 
                 case 2:
                         choosenSDSlot++;
-                        if ( (choosenSDSlot >= numsdslots) || ( (!isWii) && (choosenSDSlot > 1) ) )
+#ifdef HW_RVL
+                        if (choosenSDSlot >= numsdslots)
                             choosenSDSlot = 0;
+#else
+                        // Gamecube only gets A/B selection
+                        if (choosenSDSlot > 1)
+                            choosenSDSlot = 0;
+#endif
                         sprintf(mediamenu[2], "Dev. SDCARD: %s", sdslots[choosenSDSlot]);
                         break;
                 case 3: quit = 1;
@@ -734,7 +739,7 @@ int ConfigMenu() {
     int redraw = 1;
     int quit = 0;
 
-    void (*PSOReload)() = (void(*)())0x80001800; // 0x90000020 ?
+    //void (*PSOReload)() = (void(*)())0x80001800; // 0x90000020 ?
 
     copynow = GX_FALSE;
     Settings.Paused =TRUE;
