@@ -72,20 +72,20 @@ static uint8 vbstack[TSTACK];
 
 static void *vbgetback( void *arg )
 {
-	while(1)
-	{
-		VIDEO_WaitVSync();
-		LWP_SuspendThread(vbthread);
-	}
+    while(1)
+    {
+        VIDEO_WaitVSync();
+        LWP_SuspendThread(vbthread);
+    }
 }
 
 void InitVideoThread()
 {
-	/*** Initialise a new queue ***/
-	LWP_InitQueue(&videoblankqueue);
+    /*** Initialise a new queue ***/
+    LWP_InitQueue(&videoblankqueue);
 
-	/*** Create the thread on this queue ***/
-	LWP_CreateThread(&vbthread, vbgetback, NULL, vbstack, TSTACK, 80);	
+    /*** Create the thread on this queue ***/
+    LWP_CreateThread(&vbthread, vbgetback, NULL, vbstack, TSTACK, 80);	
 }
 
 /****************************************************************************
@@ -96,7 +96,7 @@ void InitVideoThread()
 
 void S9xSetPalette()
 {
-	return;
+    return;
 }
 
 /****************************************************************************
@@ -105,36 +105,36 @@ void S9xSetPalette()
 
 void StartGX()
 {
-	/*** Clear out FIFO area ***/
-	memset(&gp_fifo, 0, DEFAULT_FIFO_SIZE);
-	
-	/*** Initialise GX ***/
-	GX_Init(&gp_fifo, DEFAULT_FIFO_SIZE);	
-    	GX_SetCopyClear(background, 0x00ffffff);
+    /*** Clear out FIFO area ***/
+    memset(&gp_fifo, 0, DEFAULT_FIFO_SIZE);
 
-	/*** Additions from libogc ***/
-	GX_SetViewport(0,0,vmode->fbWidth,vmode->efbHeight,0,1);
-	GX_SetDispCopyYScale((f32)vmode->xfbHeight/(f32)vmode->efbHeight);
-	GX_SetDispCopySrc(0,0,vmode->fbWidth,vmode->efbHeight);
-	GX_SetDispCopyDst(vmode->fbWidth,vmode->xfbHeight);
-	
-    	GX_SetPixelFmt(GX_PF_RGB8_Z24, GX_ZC_LINEAR);
+    /*** Initialise GX ***/
+    GX_Init(&gp_fifo, DEFAULT_FIFO_SIZE);	
+    GX_SetCopyClear(background, 0x00ffffff);
 
-    	GX_SetCullMode(GX_CULL_NONE);
-    	GX_SetZMode(GX_FALSE,GX_ALWAYS,GX_TRUE);
-    	GX_SetColorUpdate(GX_TRUE);
-    	GX_CopyDisp(xfb[whichfb],GX_TRUE);
+    /*** Additions from libogc ***/
+    GX_SetViewport(0,0,vmode->fbWidth,vmode->efbHeight,0,1);
+    GX_SetDispCopyYScale((f32)vmode->xfbHeight/(f32)vmode->efbHeight);
+    GX_SetDispCopySrc(0,0,vmode->fbWidth,vmode->efbHeight);
+    GX_SetDispCopyDst(vmode->fbWidth,vmode->xfbHeight);
 
-	/*** Additions from ogc spaceship ***/
-    	GX_SetDispCopyGamma(GX_GM_1_0);
+    GX_SetPixelFmt(GX_PF_RGB8_Z24, GX_ZC_LINEAR);
 
-    	GX_ClearVtxDesc();
-    	GX_SetVtxAttrFmt(GX_VTXFMT0,GX_VA_POS,GX_POS_XYZ,GX_F32,0);
-    	GX_SetVtxAttrFmt(GX_VTXFMT0,GX_VA_TEX0,GX_TEX_ST,GX_F32,0);
-    	GX_SetVtxDesc(GX_VA_POS,GX_DIRECT);
-    	GX_SetVtxDesc(GX_VA_TEX0,GX_DIRECT);
+    GX_SetCullMode(GX_CULL_NONE);
+    GX_SetZMode(GX_FALSE,GX_ALWAYS,GX_TRUE);
+    GX_SetColorUpdate(GX_TRUE);
+    GX_CopyDisp(xfb[whichfb],GX_TRUE);
 
-	S9xSetRenderPixelFormat(RGB565); 
+    /*** Additions from ogc spaceship ***/
+    GX_SetDispCopyGamma(GX_GM_1_0);
+
+    GX_ClearVtxDesc();
+    GX_SetVtxAttrFmt(GX_VTXFMT0,GX_VA_POS,GX_POS_XYZ,GX_F32,0);
+    GX_SetVtxAttrFmt(GX_VTXFMT0,GX_VA_TEX0,GX_TEX_ST,GX_F32,0);
+    GX_SetVtxDesc(GX_VA_POS,GX_DIRECT);
+    GX_SetVtxDesc(GX_VA_TEX0,GX_DIRECT);
+
+    S9xSetRenderPixelFormat(RGB565); 
 }
 
 /****************************************************************************
@@ -143,27 +143,27 @@ void StartGX()
 
 void set256texture()
 {
-        GX_SetNumChans(0);              /* default, color = vertex color */
-        GX_SetNumTexGens(1);
-        GX_SetTexCoordGen(GX_TEXCOORD0,GX_TG_MTX2x4,GX_TG_TEX0,GX_IDENTITY);
-        GX_SetTevOrder(GX_TEVSTAGE0,GX_TEXCOORD0,GX_TEXMAP0,GX_COLORNULL);
-        GX_SetTevOp(GX_TEVSTAGE0,GX_REPLACE);
+    GX_SetNumChans(0);              /* default, color = vertex color */
+    GX_SetNumTexGens(1);
+    GX_SetTexCoordGen(GX_TEXCOORD0,GX_TG_MTX2x4,GX_TG_TEX0,GX_IDENTITY);
+    GX_SetTevOrder(GX_TEVSTAGE0,GX_TEXCOORD0,GX_TEXMAP0,GX_COLORNULL);
+    GX_SetTevOp(GX_TEVSTAGE0,GX_REPLACE);
 
-        GX_InitTexObj(&texobj,&texturemem,TEX_WIDTH,TEX_HEIGHT,
-                  GX_TF_RGB565,GX_REPEAT,GX_REPEAT,GX_FALSE);
+    GX_InitTexObj(&texobj,&texturemem,TEX_WIDTH,TEX_HEIGHT,
+            GX_TF_RGB565,GX_REPEAT,GX_REPEAT,GX_FALSE);
 
-        DCFlushRange(&texturemem, TEX_WIDTH * TEX_HEIGHT * 2);
-        GX_LoadTexObj(&texobj,GX_TEXMAP0);
-        GX_InvalidateTexAll();
+    DCFlushRange(&texturemem, TEX_WIDTH * TEX_HEIGHT * 2);
+    GX_LoadTexObj(&texobj,GX_TEXMAP0);
+    GX_InvalidateTexAll();
 
-        /* load projection matrix */
-        /*** Setting Height to 648 get's it right ? ***/
-        guOrtho(projectionMatrix,0,640,xscaler,0,-1,1);
-        GX_LoadProjectionMtx(projectionMatrix,GX_ORTHOGRAPHIC);
+    /* load projection matrix */
+    /*** Setting Height to 648 get's it right ? ***/
+    guOrtho(projectionMatrix,0,640,xscaler,0,-1,1);
+    GX_LoadProjectionMtx(projectionMatrix,GX_ORTHOGRAPHIC);
 
-        /* load model view matrix */
-        c_guMtxScale(modelViewMatrix,640,xscaler,1);
-        GX_LoadPosMtxImm(modelViewMatrix,GX_PNMTX0);
+    /* load model view matrix */
+    c_guMtxScale(modelViewMatrix,640,xscaler,1);
+    GX_LoadPosMtxImm(modelViewMatrix,GX_PNMTX0);
 }
 
 /****************************************************************************
@@ -172,27 +172,27 @@ void set256texture()
 
 void set512texture()
 {
-        GX_SetNumChans(0);              /* default, color = vertex color */
-        GX_SetNumTexGens(1);
-        GX_SetTexCoordGen(GX_TEXCOORD0,GX_TG_MTX2x4,GX_TG_TEX0,GX_IDENTITY);
-        GX_SetTevOrder(GX_TEVSTAGE0,GX_TEXCOORD0,GX_TEXMAP0,GX_COLORNULL);
-        GX_SetTevOp(GX_TEVSTAGE0,GX_REPLACE);
+    GX_SetNumChans(0);              /* default, color = vertex color */
+    GX_SetNumTexGens(1);
+    GX_SetTexCoordGen(GX_TEXCOORD0,GX_TG_MTX2x4,GX_TG_TEX0,GX_IDENTITY);
+    GX_SetTevOrder(GX_TEVSTAGE0,GX_TEXCOORD0,GX_TEXMAP0,GX_COLORNULL);
+    GX_SetTevOp(GX_TEVSTAGE0,GX_REPLACE);
 
-        GX_InitTexObj(&texobj,&texturemem,TEX_WIDTH * 2,TEX_HEIGHT,
-                  GX_TF_RGB565,GX_REPEAT,GX_REPEAT,GX_FALSE);
+    GX_InitTexObj(&texobj,&texturemem,TEX_WIDTH * 2,TEX_HEIGHT,
+            GX_TF_RGB565,GX_REPEAT,GX_REPEAT,GX_FALSE);
 
-        DCFlushRange(&texturemem, TEX_WIDTH * TEX_HEIGHT * 4);
-        GX_LoadTexObj(&texobj,GX_TEXMAP0);
-        GX_InvalidateTexAll();
+    DCFlushRange(&texturemem, TEX_WIDTH * TEX_HEIGHT * 4);
+    GX_LoadTexObj(&texobj,GX_TEXMAP0);
+    GX_InvalidateTexAll();
 
-        /* load projection matrix */
-        /*** Setting Height to 648 get's it right ? ***/
-        guOrtho(projectionMatrix,0,640,xscaler,0,-1,1);
-        GX_LoadProjectionMtx(projectionMatrix,GX_ORTHOGRAPHIC);
+    /* load projection matrix */
+    /*** Setting Height to 648 get's it right ? ***/
+    guOrtho(projectionMatrix,0,640,xscaler,0,-1,1);
+    GX_LoadProjectionMtx(projectionMatrix,GX_ORTHOGRAPHIC);
 
-        /* load model view matrix */
-        c_guMtxScale(modelViewMatrix,640,xscaler,1);
-        GX_LoadPosMtxImm(modelViewMatrix,GX_PNMTX0);
+    /* load model view matrix */
+    c_guMtxScale(modelViewMatrix,640,xscaler,1);
+    GX_LoadPosMtxImm(modelViewMatrix,GX_PNMTX0);
 }
 
 /****************************************************************************
@@ -203,61 +203,61 @@ void set512texture()
 void BuildTexture( uint8 *src, uint8 *dst, int worker1, int worker2, int worker3)
 {
 
-	asm("subi 4,4,2");
-	asm("subi 3,3,2");
-	asm("lis 6,0");
-	asm("ori 6,6,64");		/*** 64 tiles per block ***/
-	asm("lis 7,0");
-	asm("ori 7,7,60");		/*** 60 tiles vertical todo ***/	
+    asm("subi 4,4,2");
+    asm("subi 3,3,2");
+    asm("lis 6,0");
+    asm("ori 6,6,64");		/*** 64 tiles per block ***/
+    asm("lis 7,0");
+    asm("ori 7,7,60");		/*** 60 tiles vertical todo ***/	
 
-	asm("domoretileshi:");
-	asm("mtctr 6");
-	asm("tilerowhi:");
+    asm("domoretileshi:");
+    asm("mtctr 6");
+    asm("tilerowhi:");
 
-	/*** Build a block of 64 tiles ***/
-	asm("lhz 5,512(3)");		/*** Get pixel one, row one ***/
-	asm("sthu 5,2(4)");
-	asm("lhz 5,510(3)");		/*** Get pixel two, row one ***/
-	asm("sthu 5,2(4)");		/*** Store this double ***/
-	asm("lhz 5,508(3)");
-	asm("sthu 5,2(4)");
-	asm("lhz 5,506(3)");
-	asm("sthu 5,2(4)");
-	
-	asm("lhz 5,1536(3)");		/*** Get pixel one, row two ***/
-	asm("sthu 5,2(4)");
-	asm("lhz 5,1534(3)");		/*** Get pixel two, row two ***/
-	asm("sthu 5,2(4)");		/*** Store again ***/
-	asm("lhz 5,1532(3)");
-	asm("sthu 5,2(4)");
-	asm("lhz 5,1530(3)");
-	asm("sthu 5,2(4)");
+    /*** Build a block of 64 tiles ***/
+    asm("lhz 5,512(3)");		/*** Get pixel one, row one ***/
+    asm("sthu 5,2(4)");
+    asm("lhz 5,510(3)");		/*** Get pixel two, row one ***/
+    asm("sthu 5,2(4)");		/*** Store this double ***/
+    asm("lhz 5,508(3)");
+    asm("sthu 5,2(4)");
+    asm("lhz 5,506(3)");
+    asm("sthu 5,2(4)");
 
-	asm("lhz 5,2560(3)");		/*** Get pixel one, row three ***/
-	asm("sthu 5,2(4)");
-	asm("lhz 5,2558(3)");		/*** Get pixel two, row three ***/
-	asm("sthu 5,2(4)");		/*** Store again ***/
-	asm("lhz 5,2556(3)");
-	asm("sthu 5,2(4)");
-	asm("lhz 5,2554(3)");
-	asm("sthu 5,2(4)");
+    asm("lhz 5,1536(3)");		/*** Get pixel one, row two ***/
+    asm("sthu 5,2(4)");
+    asm("lhz 5,1534(3)");		/*** Get pixel two, row two ***/
+    asm("sthu 5,2(4)");		/*** Store again ***/
+    asm("lhz 5,1532(3)");
+    asm("sthu 5,2(4)");
+    asm("lhz 5,1530(3)");
+    asm("sthu 5,2(4)");
 
-	asm("lhz 5,3584(3)");
-	asm("sthu 5,2(4)");
-	asm("lhz 5,3582(3)");		/*** Get pixel two, row four ***/
-	asm("sthu 5,2(4)");		/*** Store again ***/
-	asm("lhz 5,3580(3)");
-	asm("sthu 5,2(4)");
-	asm("lhz 5,3578(3)");
-	asm("sthu 5,2(4)");
+    asm("lhz 5,2560(3)");		/*** Get pixel one, row three ***/
+    asm("sthu 5,2(4)");
+    asm("lhz 5,2558(3)");		/*** Get pixel two, row three ***/
+    asm("sthu 5,2(4)");		/*** Store again ***/
+    asm("lhz 5,2556(3)");
+    asm("sthu 5,2(4)");
+    asm("lhz 5,2554(3)");
+    asm("sthu 5,2(4)");
 
-	asm("subi 3,3,8");		/*** Move back for next pixel pair ***/
-	asm("bdnz tilerowhi");		/*** Continue for 64 tiles ***/
+    asm("lhz 5,3584(3)");
+    asm("sthu 5,2(4)");
+    asm("lhz 5,3582(3)");		/*** Get pixel two, row four ***/
+    asm("sthu 5,2(4)");		/*** Store again ***/
+    asm("lhz 5,3580(3)");
+    asm("sthu 5,2(4)");
+    asm("lhz 5,3578(3)");
+    asm("sthu 5,2(4)");
 
-	asm("addi 3,3,4608");		/*** Prepare for next 64 tile block ***/
-	asm("subi 7,7,1");		
-	asm("cmpwi 7,0");
-	asm("bne domoretileshi");
+    asm("subi 3,3,8");		/*** Move back for next pixel pair ***/
+    asm("bdnz tilerowhi");		/*** Continue for 64 tiles ***/
+
+    asm("addi 3,3,4608");		/*** Prepare for next 64 tile block ***/
+    asm("subi 7,7,1");		
+    asm("cmpwi 7,0");
+    asm("bne domoretileshi");
 
 }
 
@@ -269,61 +269,61 @@ void BuildTexture( uint8 *src, uint8 *dst, int worker1, int worker2, int worker3
 void BuildTextureHi( uint8 *src, uint8 *dst, int worker1, int worker2, int worker3)
 {
 
-        asm("subi 4,4,2");
-        asm("subi 3,3,2");
-        asm("lis 6,0");
-        asm("ori 6,6,128");             /*** 128 tiles per block ***/
-        asm("lis 7,0");
-        asm("ori 7,7,60");              /*** 60 tiles vertical todo ***/
+    asm("subi 4,4,2");
+    asm("subi 3,3,2");
+    asm("lis 6,0");
+    asm("ori 6,6,128");             /*** 128 tiles per block ***/
+    asm("lis 7,0");
+    asm("ori 7,7,60");              /*** 60 tiles vertical todo ***/
 
-        asm("domoretiles:");
-        asm("mtctr 6");
-        asm("tilerow:");
+    asm("domoretiles:");
+    asm("mtctr 6");
+    asm("tilerow:");
 
-        /*** Build a block of 64 tiles ***/
-        asm("lhz 5,1024(3)");            /*** Get pixel one, row one ***/
-        asm("sthu 5,2(4)");
-        asm("lhz 5,1022(3)");            /*** Get pixel two, row one ***/
-        asm("sthu 5,2(4)");             /*** Store this double ***/
-        asm("lhz 5,1020(3)");
-        asm("sthu 5,2(4)");
-        asm("lhz 5,1018(3)");
-        asm("sthu 5,2(4)");
+    /*** Build a block of 64 tiles ***/
+    asm("lhz 5,1024(3)");            /*** Get pixel one, row one ***/
+    asm("sthu 5,2(4)");
+    asm("lhz 5,1022(3)");            /*** Get pixel two, row one ***/
+    asm("sthu 5,2(4)");             /*** Store this double ***/
+    asm("lhz 5,1020(3)");
+    asm("sthu 5,2(4)");
+    asm("lhz 5,1018(3)");
+    asm("sthu 5,2(4)");
 
-        asm("lhz 5,2048(3)");           /*** Get pixel one, row two ***/
-        asm("sthu 5,2(4)");
-        asm("lhz 5,2046(3)");           /*** Get pixel two, row two ***/
-        asm("sthu 5,2(4)");             /*** Store again ***/
-        asm("lhz 5,2044(3)");
-        asm("sthu 5,2(4)");
-        asm("lhz 5,2042(3)");
-        asm("sthu 5,2(4)");
+    asm("lhz 5,2048(3)");           /*** Get pixel one, row two ***/
+    asm("sthu 5,2(4)");
+    asm("lhz 5,2046(3)");           /*** Get pixel two, row two ***/
+    asm("sthu 5,2(4)");             /*** Store again ***/
+    asm("lhz 5,2044(3)");
+    asm("sthu 5,2(4)");
+    asm("lhz 5,2042(3)");
+    asm("sthu 5,2(4)");
 
-        asm("lhz 5,3072(3)");           /*** Get pixel one, row three ***/
-        asm("sthu 5,2(4)");
-        asm("lhz 5,3070(3)");           /*** Get pixel two, row three ***/
-        asm("sthu 5,2(4)");             /*** Store again ***/
-        asm("lhz 5,3068(3)");
-        asm("sthu 5,2(4)");
-        asm("lhz 5,3066(3)");
-        asm("sthu 5,2(4)");
+    asm("lhz 5,3072(3)");           /*** Get pixel one, row three ***/
+    asm("sthu 5,2(4)");
+    asm("lhz 5,3070(3)");           /*** Get pixel two, row three ***/
+    asm("sthu 5,2(4)");             /*** Store again ***/
+    asm("lhz 5,3068(3)");
+    asm("sthu 5,2(4)");
+    asm("lhz 5,3066(3)");
+    asm("sthu 5,2(4)");
 
-        asm("lhz 5,4096(3)");
-        asm("sthu 5,2(4)");
-        asm("lhz 5,4094(3)");           /*** Get pixel two, row four ***/
-        asm("sthu 5,2(4)");             /*** Store again ***/
-        asm("lhz 5,4092(3)");
-        asm("sthu 5,2(4)");
-        asm("lhz 5,4090(3)");
-        asm("sthu 5,2(4)");
+    asm("lhz 5,4096(3)");
+    asm("sthu 5,2(4)");
+    asm("lhz 5,4094(3)");           /*** Get pixel two, row four ***/
+    asm("sthu 5,2(4)");             /*** Store again ***/
+    asm("lhz 5,4092(3)");
+    asm("sthu 5,2(4)");
+    asm("lhz 5,4090(3)");
+    asm("sthu 5,2(4)");
 
-        asm("subi 3,3,8");              /*** Move back for next pixel pair ***/
-        asm("bdnz tilerow");            /*** Continue for 64 tiles ***/
+    asm("subi 3,3,8");              /*** Move back for next pixel pair ***/
+    asm("bdnz tilerow");            /*** Continue for 64 tiles ***/
 
-        asm("addi 3,3,5120");           /*** Prepare for next 64 tile block ***/
-        asm("subi 7,7,1");
-        asm("cmpwi 7,0");
-        asm("bne domoretiles");
+    asm("addi 3,3,5120");           /*** Prepare for next 64 tile block ***/
+    asm("subi 7,7,1");
+    asm("cmpwi 7,0");
+    asm("bne domoretiles");
 
 }
 
@@ -337,76 +337,76 @@ static int texoffset = 0;
 void DrawFrame( int Width, int Height )
 {
 
-	float gs = 1.0;
-	float gt = 1.0;
-	int worker1, worker2, worker3;
+    float gs = 1.0;
+    float gt = 1.0;
+    int worker1, worker2, worker3;
 
-        while ( LWP_ThreadIsSuspended( vbthread ) == 0 ) {
-                       usleep(50);
-        }
+    while ( LWP_ThreadIsSuspended( vbthread ) == 0 ) {
+        usleep(50);
+    }
 
-        memset(&texturemem, 0, TEX_WIDTH * TEX_HEIGHT * 4);
+    memset(&texturemem, 0, TEX_WIDTH * TEX_HEIGHT * 4);
 
-	if ( lastwidth != Width )
-	{
-		if( Width != 512 )
-			set256texture();
-		else
-			set512texture();
-	
-		lastwidth = Width;
-	}
+    if ( lastwidth != Width )
+    {
+        if( Width != 512 )
+            set256texture();
+        else
+            set512texture();
 
-	if ( lastheight != Height ) {
+        lastwidth = Width;
+    }
 
-		if ( Height == 224 )
-			texoffset = 16;
-		else
-			texoffset = 8;
+    if ( lastheight != Height ) {
 
-		lastheight = Height;
-	}
+        if ( Height == 224 )
+            texoffset = 16;
+        else
+            texoffset = 8;
 
-	worker1 = worker2 = worker3 = 0;
-	
-	if ( lastwidth != 512 ) {
-		BuildTexture( (unsigned char *)GFX.Screen, (unsigned char *)&texturemem[ texoffset * TEX_WIDTH * 2 ],
-		      worker1, worker2, worker3 );
-  		DCFlushRange(&texturemem, TEX_WIDTH * TEX_HEIGHT * 2);
-	} else {
-                BuildTextureHi( (unsigned char *)GFX.Screen, (unsigned char *)&texturemem[ texoffset * TEX_WIDTH * 4 ],
-                      worker1, worker2, worker3 );
-                DCFlushRange(&texturemem, TEX_WIDTH * TEX_HEIGHT * 4);
-	}
+        lastheight = Height;
+    }
 
-        whichfb ^= 1;
+    worker1 = worker2 = worker3 = 0;
 
-  	/* setup GX */
-  	GX_InvalidateTexAll(); 
-	
-  	// ok render the triangle now 
-  	GX_Begin(GX_QUADS,GX_VTXFMT0,4);
-  	{
-    		GX_Position3f32(0,0,0);
-    		GX_TexCoord2f32(0,0);
-    
-    		GX_Position3f32(0,1,0);
-    		GX_TexCoord2f32(0,gt);
-    
-    		GX_Position3f32(1,1,0);
-    		GX_TexCoord2f32(gs,gt);
-    
-    		GX_Position3f32(1,0,0);
-    		GX_TexCoord2f32(gs,0);
-  	}
-  	GX_End();
-  	GX_DrawDone();
-  	copynow = GX_TRUE;
-        VIDEO_SetNextFramebuffer(xfb[whichfb]);
-	VIDEO_Flush();
-	
-	LWP_ResumeThread(vbthread);
-  	
+    if ( lastwidth != 512 ) {
+        BuildTexture( (unsigned char *)GFX.Screen, (unsigned char *)&texturemem[ texoffset * TEX_WIDTH * 2 ],
+                worker1, worker2, worker3 );
+        DCFlushRange(&texturemem, TEX_WIDTH * TEX_HEIGHT * 2);
+    } else {
+        BuildTextureHi( (unsigned char *)GFX.Screen, (unsigned char *)&texturemem[ texoffset * TEX_WIDTH * 4 ],
+                worker1, worker2, worker3 );
+        DCFlushRange(&texturemem, TEX_WIDTH * TEX_HEIGHT * 4);
+    }
+
+    whichfb ^= 1;
+
+    /* setup GX */
+    GX_InvalidateTexAll(); 
+
+    // ok render the triangle now 
+    GX_Begin(GX_QUADS,GX_VTXFMT0,4);
+    {
+        GX_Position3f32(0,0,0);
+        GX_TexCoord2f32(0,0);
+
+        GX_Position3f32(0,1,0);
+        GX_TexCoord2f32(0,gt);
+
+        GX_Position3f32(1,1,0);
+        GX_TexCoord2f32(gs,gt);
+
+        GX_Position3f32(1,0,0);
+        GX_TexCoord2f32(gs,0);
+    }
+    GX_End();
+    GX_DrawDone();
+    copynow = GX_TRUE;
+    VIDEO_SetNextFramebuffer(xfb[whichfb]);
+    VIDEO_Flush();
+
+    LWP_ResumeThread(vbthread);
+
 }
 
 /****************************************************************************
@@ -414,11 +414,11 @@ void DrawFrame( int Width, int Height )
  ****************************************************************************/
 static void copy_to_xfb()
 {
-	if ( copynow == GX_TRUE ) {
-		GX_CopyDisp(xfb[whichfb],GX_TRUE);
-		GX_Flush();
-		copynow = GX_FALSE;
-	}
+    if ( copynow == GX_TRUE ) {
+        GX_CopyDisp(xfb[whichfb],GX_TRUE);
+        GX_Flush();
+        copynow = GX_FALSE;
+    }
 }
 
 /****************************************************************************
@@ -427,8 +427,8 @@ static void copy_to_xfb()
 unsigned int FrameTimer = 0;
 void SnesTimer( unsigned int dummy )
 {
-	FrameTimer++;
-	copy_to_xfb();
+    FrameTimer++;
+    copy_to_xfb();
 }
 
 /****************************************************************************
@@ -437,59 +437,59 @@ void SnesTimer( unsigned int dummy )
 
 void InitGCVideo()
 {
-	/*** Start VIDEO - ALWAYS CALL FIRST IN LIBOGC ***/
-	VIDEO_Init();
-	PAD_Init();
+    /*** Start VIDEO - ALWAYS CALL FIRST IN LIBOGC ***/
+    VIDEO_Init();
+    PAD_Init();
 
-	switch (VIDEO_GetCurrentTvMode ())
-	{
-		case VI_NTSC:
-			vmode = &TVNtsc480IntDf;
-			break;
+    switch (VIDEO_GetCurrentTvMode ())
+    {
+        case VI_NTSC:
+            vmode = &TVNtsc480IntDf;
+            break;
 
-		case VI_PAL:
-			vmode = &TVPal528IntDf;
-			break;
-		case VI_MPAL:
-			vmode = &TVMpal480IntDf;
-			break;
+        case VI_PAL:
+            vmode = &TVPal528IntDf;
+            break;
+        case VI_MPAL:
+            vmode = &TVMpal480IntDf;
+            break;
 
-		default:
-			vmode = &TVNtsc480IntDf;
-			break;
-	}
+        default:
+            vmode = &TVNtsc480IntDf;
+            break;
+    }
 
 #ifdef FORCE_PAL50
-  vmode = &TVPal528IntDf;
+    vmode = &TVPal528IntDf;
 #endif
 
-	VIDEO_Configure(vmode);
+    VIDEO_Configure(vmode);
 
-        xfb[0] = (unsigned int *)MEM_K0_TO_K1(SYS_AllocateFramebuffer(vmode));
-        xfb[1] = (unsigned int *)MEM_K0_TO_K1(SYS_AllocateFramebuffer(vmode));
+    xfb[0] = (unsigned int *)MEM_K0_TO_K1(SYS_AllocateFramebuffer(vmode));
+    xfb[1] = (unsigned int *)MEM_K0_TO_K1(SYS_AllocateFramebuffer(vmode));
 
-	console_init(xfb[0],20,64,vmode->fbWidth,vmode->xfbHeight,vmode->fbWidth*2);
-	VIDEO_ClearFrameBuffer( vmode, xfb[ 0 ], COLOR_BLACK );
-	VIDEO_ClearFrameBuffer( vmode, xfb[ 1 ], COLOR_BLACK );
-        VIDEO_SetNextFramebuffer(xfb[0]);
-        //VIDEO_SetPostRetraceCallback(PAD_ScanPads);
-		VIDEO_SetPostRetraceCallback((VIRetraceCallback)PAD_ScanPads);
-        VIDEO_SetPreRetraceCallback(SnesTimer);
-        VIDEO_SetBlack(FALSE);
-        VIDEO_Flush();
-        VIDEO_WaitVSync();
-        if(vmode->viTVMode&VI_NON_INTERLACE) VIDEO_WaitVSync();
+    console_init(xfb[0],20,64,vmode->fbWidth,vmode->xfbHeight,vmode->fbWidth*2);
+    VIDEO_ClearFrameBuffer( vmode, xfb[ 0 ], COLOR_BLACK );
+    VIDEO_ClearFrameBuffer( vmode, xfb[ 1 ], COLOR_BLACK );
+    VIDEO_SetNextFramebuffer(xfb[0]);
+    //VIDEO_SetPostRetraceCallback(PAD_ScanPads);
+    VIDEO_SetPostRetraceCallback((VIRetraceCallback)PAD_ScanPads);
+    VIDEO_SetPreRetraceCallback(SnesTimer);
+    VIDEO_SetBlack(FALSE);
+    VIDEO_Flush();
+    VIDEO_WaitVSync();
+    if(vmode->viTVMode&VI_NON_INTERLACE) VIDEO_WaitVSync();
 
-	copynow = GX_FALSE;
-	StartGX();
+    copynow = GX_FALSE;
+    StartGX();
 
-	InitVideoThread();	
+    InitVideoThread();	
 
-	/*** Initialise the font for menus ***/
-	init_font();
-	  
-	/*** Initialise the DVD subsystem ***/
-	DVD_Init();
+    /*** Initialise the font for menus ***/
+    init_font();
+
+    /*** Initialise the DVD subsystem ***/
+    DVD_Init();
 
 }
 

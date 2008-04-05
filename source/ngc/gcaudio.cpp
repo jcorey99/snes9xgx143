@@ -42,31 +42,31 @@ int whichab = 0;
  ****************************************************************************/
 static void AudioSwitchBuffers()
 {
-	uint32 *src;
-	uint32 *dst;
-	int count;
-	
-	AUDIO_StopDMA();
-	AUDIO_InitDMA((u32)SoundBuffer[whichab], AUDIOBUFFER);
-	DCFlushRange(&SoundBuffer[whichab], AUDIOBUFFER);
-	AUDIO_StartDMA();
+    uint32 *src;
+    uint32 *dst;
+    int count;
+
+    AUDIO_StopDMA();
+    AUDIO_InitDMA((u32)SoundBuffer[whichab], AUDIOBUFFER);
+    DCFlushRange(&SoundBuffer[whichab], AUDIOBUFFER);
+    AUDIO_StartDMA();
 
     whichab ^= 1;
     memset(&SoundBuffer[whichab], 0, AUDIOBUFFER);
     so.samples_mixed_so_far = so.play_position = 0;
-	
+
     S9xMixSamples((unsigned char *)&tempbuffer, AUDIOBUFFER >> 2);
-	
-	count = AUDIOBUFFER >> 3;
-	src = (uint32 *)&tempbuffer;
-	dst = (uint32 *)&SoundBuffer[whichab];
-	
-	while ( count )
-	{
-		*dst++ = *src;
-		*dst++ = *src++;
-		count--;
-	}
+
+    count = AUDIOBUFFER >> 3;
+    src = (uint32 *)&tempbuffer;
+    dst = (uint32 *)&SoundBuffer[whichab];
+
+    while ( count )
+    {
+        *dst++ = *src;
+        *dst++ = *src++;
+        count--;
+    }
 }
 
 /****************************************************************************
@@ -76,7 +76,7 @@ static void AudioSwitchBuffers()
  ****************************************************************************/
 void AudioGo()
 {
-	AudioSwitchBuffers();
+    AudioSwitchBuffers();
 }
 
 /****************************************************************************
@@ -89,7 +89,7 @@ void InitialiseSound()
     AUDIO_Init(NULL);       /*** Start audio subsystem ***/    
     AUDIO_SetDSPSampleRate(AI_SAMPLERATE_48KHZ); /*** Set default samplerate to 48khz ***/    
     AUDIO_RegisterDMACallback( AudioSwitchBuffers );/*** and the DMA Callback ***/
-	DCFlushRange((char *)&SoundBuffer[0], AUDIOBUFFER);
+    DCFlushRange((char *)&SoundBuffer[0], AUDIOBUFFER);
 }
 
 /****************************************************************************
@@ -99,18 +99,18 @@ void InitialiseSound()
  ****************************************************************************/
 bool SetupSound()
 {
-	InitialiseSound();
+    InitialiseSound();
 
-	so.playback_rate = 24000;
-	so.sixteen_bit = TRUE;
-	so.stereo = TRUE;
+    so.playback_rate = 24000;
+    so.sixteen_bit = TRUE;
+    so.stereo = TRUE;
 
-	S9xSetPlaybackRate( so.playback_rate );
+    S9xSetPlaybackRate( so.playback_rate );
 
-	so.encoded = FALSE;
-	so.buffer_size = AUDIOBUFFER;
+    so.encoded = FALSE;
+    so.buffer_size = AUDIOBUFFER;
 
-	return TRUE;
+    return TRUE;
 }
 
 /****************************************************************************
@@ -118,6 +118,6 @@ bool SetupSound()
  ****************************************************************************/
 void S9xGenerateSound()
 {
-	return;
+    return;
 }
 
