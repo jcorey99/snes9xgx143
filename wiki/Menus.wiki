@@ -1,0 +1,35 @@
+﻿#summary Menu structure for Snes9xGX
+#labels Phase-Design
+
+= Main Menu =
+ # Play Game
+ # Reset Emulator
+ # Load New Game
+   # Load from DVD
+   # Load from SDCARD
+ # SRAM Manager
+   # Use: SLOT A/B
+   # Device: MCARD/SDCARD
+   # Save SRAM
+   # Load SRAM
+ # ROM Information
+ # Configure Joypads
+   # SETUP A/B/C/D/E
+   # SNES BUTTON A - X
+   # SNES BUTTON B - A
+   # SNES BUTTON X - B
+   # SNES BUTTON Y - Y
+   # ANALOG CLIP - 70
+   # ALLOW U+D / L+R OFF
+ # Emulator Options
+   # Sound Echo ON
+   # Reverse Stereo OFF
+   # Transparency ON
+   # FPS Display OFF
+   # Interpolate ON
+   # Timer VBLANK
+   # Multitap OFF
+ # Stop DVD Motor
+ # PSO/SD Reload
+ # Reboot Gamecube/Wii
+ # View Credits
