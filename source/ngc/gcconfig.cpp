@@ -616,8 +616,8 @@ void EmuMenu()
  * Media Select Screen
  ****************************************************************************/
 
-//int choosenSDSlot = 0;
 int mediacount = 4;
+int choosenSDSlot = 0;
 
 char mediamenu[4][20] = { 
     { "Load from DVD" }, { "Load from SDCARD"},
@@ -628,23 +628,18 @@ char sdslots[3][10] = {
     { "Slot A" }, { "Slot B" }, { "Front" }
 };
 
-
-int MediaSelect(){
-
+int MediaSelect() {
     int menu = 0;
     int quit = 0;
     short j;
     int redraw = 1;
 
-    while ( quit == 0 )
-    {
-        if ( redraw ) //DrawMenu(&mediamenu[0], mediacount, menu );			
+    while ( quit == 0 ) {
+        if ( redraw )
             DrawMenu("Load a Game", &mediamenu[0], mediacount, menu);
-
         redraw = 0;
 
         j = PAD_ButtonsDown(0);
-
         if ( j & PAD_BUTTON_DOWN ) {
             menu++;
             redraw = 1;
@@ -670,6 +665,7 @@ int MediaSelect(){
                         } else {
                             UseFrontSDCARD = 0;
                             UseFrontSDCARD = 0;
+                        }
                         OpenSD();
                         return 1;
                         break;
@@ -730,8 +726,8 @@ char configmenu[11][20] = {
     { "View Credits" }  
 };
 
-int ConfigMenu()
-{
+
+int ConfigMenu() {
     int menu = 0;
     short j;
     int redraw = 1;
@@ -748,8 +744,7 @@ int ConfigMenu()
         strcpy(configmenu[8], "TP Reload");
     }
 
-    while ( quit == 0 )
-    {
+    while ( quit == 0 ) {
         if ( redraw ) {
             DrawMenu("Snes9x GX Configuration", &configmenu[0], configmenucount, menu);
         }
@@ -771,7 +766,6 @@ int ConfigMenu()
         if ( j & PAD_BUTTON_A ) {
             redraw = 1;
             switch( menu ) {
-
                 case 0 : // Play Game
                     quit = 1;
                     break;
@@ -829,4 +823,3 @@ int ConfigMenu()
     Settings.Paused = FALSE;
     return 0;
 }
-
