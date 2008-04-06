@@ -614,13 +614,17 @@ void EmuMenu()
  * Media Select Screen
  ****************************************************************************/
 
-//int choosenSDSlot = 0;
-int mediacount = 3;
+int choosenSDSlot = 0;
+int mediacount = 4;
 
-char mediamenu[3][20] = { 
+char mediamenu[4][20] = { 
     { "Load from DVD" }, { "Load from SDCARD"}, 
-    //{ "Dev. SDCARD:SLOT A" }, 
-    { "Return to previous" } 
+    { "SDGecko: Slot A" }, { "Return to previous" } 
+};
+
+int numsdslots = 2;
+char sdslots[2][10] = {
+        { "Slot A" }, { "Slot B" }
 };
 
 int MediaSelect(){
@@ -661,11 +665,12 @@ int MediaSelect(){
                         OpenSD();
                         return 1;
                         break;
-                        /*case 2:
-                          choosenSDSlot ^= 1;
-                          sprintf(mediamenu[2], (!choosenSDSlot) ? "Dev. SDCARD:SLOT A" : "Dev. SDCARD:SLOT B");
-                          break;*/
-                case 2: quit = 1;
+                case 2:
+                        choosenSDSlot++;
+                        if (choosenSDSlot >= numsdslots) choosenSDSlot = 0;
+                        sprintf(mediamenu[2], "SDGecko: %s", sdslots[choosenSDSlot]);
+                        break;
+                case 3: quit = 1;
                         break;
 
                 default: break ;
