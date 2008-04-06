@@ -24,8 +24,8 @@
 
 /* GUI Definition */
 #define MAXFILES 1000
-#define PAGESIZE 17
-#define PADCAL 70
+#define PAGESIZE 15
+extern int PADCAL;
 
 /* SDCARD reading & browsing */
 int UseSDCARD = 0;
@@ -50,7 +50,6 @@ int LoadFromDVD = 0;
 unsigned char readbuffer[2048] ATTRIBUTE_ALIGN(32);
 //unsigned char savebuffer[0x22000] ATTRIBUTE_ALIGN (32);
 volatile long *dvd=(volatile long *)0xCC006000;
-static unsigned char *inquiry=(unsigned char *)0x80000004;
 extern void SendDriveCode( int model );
 extern int font_height;
 extern unsigned int blit_lookup[4];
@@ -326,7 +325,7 @@ int IsPVD() {
  ****************************************************************************/
 static int diroffset = 0;
 int getfiles( int filecount ) {
-    char fname[512];
+    char fname[MAXJOLIET];
     char *ptr;
     char *filename;
     char *filenamelength;
@@ -334,14 +333,12 @@ int getfiles( int filecount ) {
     int j;
     u32 offset32;
 
-    char msg[1024];
     /*** Do some basic checks ***/
     if ( filecount >= MAXFILES ) return 0;
     if ( diroffset >= 2048 ) return 0;
 
     /*** Now decode this entry ***/
-    if ( readbuffer[diroffset] != 0 )
-    {
+    if ( readbuffer[diroffset] != 0 ) {
         /* Update offsets into sector buffer */
         ptr = (char *)&readbuffer[0];
         ptr += diroffset;		
@@ -356,7 +353,6 @@ int getfiles( int filecount ) {
             memset(&fname, 0, 512);
 
             /*** Return the values needed ***/
-            //if ( IsJoliet == 1 )
             if (!IsJoliet)
                 strcpy(fname, filename);
             else {			
@@ -423,7 +419,6 @@ int parsedir()
     pdlength = rootdirlength;
     filecount = 0;
 
-    char msg[1024];
     /*** Clear any existing values ***/
     memset(&filelist, 0, sizeof(FILEENTRIES) * MAXFILES);
 
@@ -494,7 +489,7 @@ int updateSDdirname()
         }
         else
         {
-            WaitPrompt ("Dirname is too long !"); 
+            WaitPrompt((char*)"Dirname is too long !"); 
             return -1;
         }
     } 
@@ -545,9 +540,7 @@ int parseSDdirectory()
  *
  * Support function for FileSelector
  ****************************************************************************/
-
-void ShowFiles( int offset, int selection )
-{
+void ShowFiles( int offset, int selection ) {
     int i,j;
     char text[80];
 
@@ -563,11 +556,13 @@ void ShowFiles( int offset, int selection )
         } else
             strcpy(text, filelist[i].filename);
 
-
+        writex(CentreTextPosition(rootSDdir), 32, GetTextWidth(rootSDdir), font_height, rootSDdir, blit_lookup);
+        while (GetTextWidth(text) > 620)
+            text[strlen(text)-2] = 0;
         if ( j == ( selection - offset ) )
-            writex( CentreTextPosition(text), ( j * font_height ) + 32,	GetTextWidth(text), font_height, text, blit_lookup_inv );
+            writex( CentreTextPosition(text), ( j * font_height ) + 64,	GetTextWidth(text), font_height, text, blit_lookup_inv );
         else
-            writex( CentreTextPosition(text), ( j * font_height ) + 32, GetTextWidth(text), font_height, text, blit_lookup );
+            writex( CentreTextPosition(text), ( j * font_height ) + 64, GetTextWidth(text), font_height, text, blit_lookup );
 
         j++;		
     }
@@ -592,9 +587,7 @@ void FileSelector()
     int redraw = 1;
 
     showspinner = 0;
-
-    while ( haverom == 0 )
-    {
+    while ( haverom == 0 ) {
         if ( redraw ) ShowFiles( offset, selection );
 
         redraw = 0;
@@ -656,7 +649,7 @@ void FileSelector()
                         maxfiles = parseSDdirectory();
                         if (!maxfiles)
                         {
-                            WaitPrompt ("Error reading directory !");
+                            WaitPrompt ((char*)"Error reading directory !");
                             haverom   = 1; // quit SD menu
                             haveSDdir = 0; // reset everything at next access
                         }
@@ -710,7 +703,7 @@ int LoadDVDFile( unsigned char *buffer )
     offset = 0;
     discoffset = rootdir;
 
-    ShowAction("Loading ... Wait");	
+    ShowAction((char*)"Loading ... Wait");	
     if (UseSDCARD) SDCARD_ReadFile (filehandle, &readbuffer, 2048);  
     else dvd_read(&readbuffer, 2048, discoffset);
 
@@ -719,8 +712,7 @@ int LoadDVDFile( unsigned char *buffer )
         for ( i = 0; i < blocks; i++ ) {
             if (UseSDCARD) SDCARD_ReadFile (filehandle, &readbuffer, 2048);	  
             else dvd_read(&readbuffer, 2048, discoffset);
-            //memcpy(&buffer[offset], &readbuffer, 2048);
-            memcpy(buffer+offset, readbuffer, 2048);
+            memcpy(&buffer[offset], &readbuffer, 2048);
             offset += 2048;
             discoffset += 2048;
         }
@@ -730,8 +722,7 @@ int LoadDVDFile( unsigned char *buffer )
             i = rootdirlength % 2048;
             if (UseSDCARD) SDCARD_ReadFile (filehandle, &readbuffer, i);	  
             else dvd_read(&readbuffer, 2048, discoffset);
-            //memcpy(&buffer[offset], &readbuffer, i);
-            memcpy(buffer+offset, readbuffer, i);
+            memcpy(&buffer[offset], &readbuffer, i);
         }
     } else {		
         return unzipDVDFile( buffer, discoffset, rootdirlength);
@@ -751,15 +742,11 @@ int LoadDVDFile( unsigned char *buffer )
 static int havedir = 0;
 
 int OpenDVD() {
-    int i, j;
-    int driveid;
-    char msg[1024];
-
     haveSDdir = 0;
 
     // Mount the DVD if necessary
     if (!IsPVD()) {
-        ShowAction("Mounting DVD");
+        ShowAction((char*)"Mounting DVD");
         DVD_Mount();
         havedir = 0;
         if (!IsPVD()) {
@@ -769,8 +756,7 @@ int OpenDVD() {
 
     /*** At this point I should have an unlocked DVD ... so let's do the ISO ***/
     if ( havedir != 1 ) {
-        if ( IsPVD() )
-        {
+        if ( IsPVD() ) {
             /*** Have a valid PVD, so start reading directory entries ***/
             maxfiles = parsedir();	
             if ( maxfiles ) {
@@ -778,9 +764,8 @@ int OpenDVD() {
                 FileSelector();
                 havedir = 1;
             }
-        } else {
+        } else
             return 0;
-        }
     } else 
         FileSelector();
 
@@ -803,7 +788,7 @@ int OpenSD () {
         sdslot = choosenSDSlot;
 
         /* Parse initial root directory and get entries list */
-        ShowAction("Reading Directory ...");
+        ShowAction((char*)"Reading Directory ...");
         if ((maxfiles = parseSDdirectory ())) {
             sprintf (msg, "Found %d entries", maxfiles);
             ShowAction(msg);
@@ -840,14 +825,14 @@ void GetSDInfo ()
 
     else
     {
-        WaitPrompt ("Maximum Filename Length reached !"); 
+        WaitPrompt ((char*)"Maximum Filename Length reached !"); 
         haveSDdir = 0; // reset everything before next access
     }
 
     filehandle = SDCARD_OpenFile (fname, "rb");
     if (filehandle == NULL)
     {
-        WaitPrompt ("Unable to open file!");
+        WaitPrompt ((char*)"Unable to open file!");
         return;
     }
     rootdirlength = SDCARD_GetFileSize (filehandle);
