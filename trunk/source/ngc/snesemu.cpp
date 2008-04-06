@@ -316,8 +316,6 @@ void Emulate()
 /****************************************************************************
  * Program Entry - Main
  ****************************************************************************/
-int choosenSDSlot = 0;
-
 int main()
 {
 
@@ -370,7 +368,6 @@ int main()
 
     Memory.LoadSRAM( "DVD" );
 
-    choosenSDSlot = !WaitPromptChoice("Choose a SLOT to load Roms from SDCARD", "SLOT B", "SLOT A");
     ConfigMenu();
 
     Emulate();
