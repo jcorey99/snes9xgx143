@@ -364,6 +364,7 @@ void ConfigPAD()
             sprintf(padmenu[5],"ANALOG CLIP   - %d", PADCAL);
             DrawMenu("Gamecube Pad Configuration", &padmenu[0], configpadcount, menu);
         }
+
         if (j & PAD_BUTTON_B) {
             quit = 1;
         }

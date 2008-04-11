@@ -341,7 +341,7 @@ int getfiles( int filecount ) {
     if ( readbuffer[diroffset] != 0 ) {
         /* Update offsets into sector buffer */
         ptr = (char *)&readbuffer[0];
-        ptr += diroffset;		
+        ptr += diroffset;
         filename = ptr + FILENAME;
         filenamelength = ptr + FILENAME_LENGTH;
 
@@ -769,7 +769,7 @@ int OpenDVD() {
     } else 
         FileSelector();
 
-    return 1;		
+    return 1;
 }
 
 int OpenSD () {
