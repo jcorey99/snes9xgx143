@@ -47,7 +47,7 @@ int ConfigMenu();
 void SetScreen();
 void ClearScreen();
 
-char *title = "Snes9x 1.43 - GX Edition 0.1.0";
+char *title = (char*)"Snes9x 1.43 - GX Edition 0.1.1beta WiiSD";
 extern int CARDSLOT;
 
 #define SOFTRESET_ADR ((volatile u32*)0xCC003024)
@@ -55,8 +55,7 @@ extern int CARDSLOT;
 /****************************************************************************
  * Font drawing support
  ****************************************************************************/
-int GetTextWidth( char *text )
-{
+int GetTextWidth( char *text ) {
     unsigned int i, w = 0;
 
     for ( i = 0; i < strlen(text); i++ )
@@ -121,7 +120,7 @@ void WaitPrompt( char *msg )
     {
         ClearScreen();
         WriteCentre( 220, msg);
-        WriteCentre( 220 + font_height, "Press A to Continue");
+        WriteCentre( 220 + font_height, (char*)"Press A to Continue");
 
         if ( PAD_ButtonsDown(0) & PAD_BUTTON_A )
             quit = 1;
@@ -234,27 +233,26 @@ void credits()
 
         int p = 80;
 
-        WriteCentre( p += font_height, "Snes9x 1.43 - Snes9x Team");
-        WriteCentre( p += font_height, "GC port - softdev");
-        WriteCentre( p += font_height, "GX info - http://www.gc-linux.org");
-        WriteCentre( p += font_height, "Font - Qoob/or9");
-        WriteCentre( p += font_height, "libogc - shagkur/wntrmute");
-        WriteCentre( p += font_height, "DVD lib - Ninjamod Team");
+        WriteCentre( p += font_height, (char*)"Snes9x 1.43 - Snes9x Team");
+        WriteCentre( p += font_height, (char*)"GC port - softdev");
+        WriteCentre( p += font_height, (char*)"GX info - http://www.gc-linux.org");
+        WriteCentre( p += font_height, (char*)"Font - Qoob/or9");
+        WriteCentre( p += font_height, (char*)"libogc - shagkur/wntrmute");
+        WriteCentre( p += font_height, (char*)"DVD lib - Ninjamod Team");
 
         p += font_height;
-        WriteCentre( p += font_height, "Testing");
-        WriteCentre( p += font_height, "Mithos / luciddream / softdev");
+        WriteCentre( p += font_height, (char*)"Testing");
+        WriteCentre( p += font_height, (char*)"Mithos / luciddream / softdev");
 
         p += font_height;
-        WriteCentre( p += font_height, "Greets : brakken, HonkeyKong");
-        WriteCentre( p += font_height, "cedy_nl, raz, scognito");
+        WriteCentre( p += font_height, (char*)"Greets : brakken, HonkeyKong");
+        WriteCentre( p += font_height, (char*)"cedy_nl, raz, scognito");
 
         //p += font_height;
-        WriteCentre( p += font_height, "Extras: KruLLo, Askot, dsbomb");
-        WriteCentre( p += font_height, "Support - http://www.tehskeen.com");
+        WriteCentre( p += font_height, (char*)"Extras: KruLLo, Askot, dsbomb");
+        WriteCentre( p += font_height, (char*)"Support - http://www.tehskeen.com");
 
         SetScreen();
-
         if (PAD_ButtonsDown(0) & (PAD_BUTTON_A | PAD_BUTTON_B) ) quit = 1;
     }
 
@@ -300,12 +298,11 @@ void DrawMenu(char *title, char items[][20], int maxitems, int select)
  * Remap a pad to the correct key
  ****************************************************************************/
 extern unsigned short gcpadmap[12];
-char PADMap( int padvalue, int padnum )
-{
+char PADMap( int padvalue, int padnum ) {
     char padkey;
 
-    switch( padvalue )
-    {
+    switch( padvalue ) {
+        default:
         case 0: gcpadmap[padnum] = PAD_BUTTON_A; padkey = 'A'; break;
         case 1: gcpadmap[padnum] = PAD_BUTTON_B; padkey = 'B'; break;
         case 2: gcpadmap[padnum] = PAD_BUTTON_X; padkey = 'X'; break;
@@ -338,9 +335,7 @@ char mpads[4];
 
 int PADCON = 0;
 
-void ConfigPAD()
-{
-
+void ConfigPAD() {
     int menu = 0;
     short j;
     int redraw = 1;
@@ -363,15 +358,16 @@ void ConfigPAD()
             sprintf(padmenu[0],"SETUP %c", PADCON + 65);
             strcpy(padmenu[6], allowupdown == 1 ? "ALLOW U+D / L+R ON" : "ALLOW U+D / L+R OFF");
             sprintf(padmenu[5],"ANALOG CLIP   - %d", PADCAL);
-            DrawMenu("Gamecube Pad Configuration", &padmenu[0], configpadcount, menu);
-        }
-        if (j & PAD_BUTTON_B) {
-            quit = 1;
+            DrawMenu((char*)"Gamecube Pad Configuration", &padmenu[0], configpadcount, menu);
         }
 
         redraw = 1;
 
         j = PAD_ButtonsDown(0);
+
+        if (j & PAD_BUTTON_B) {
+            quit = 1;
+        }
 
         if ( j & PAD_BUTTON_DOWN ) {
             menu++;
@@ -466,7 +462,7 @@ void savegame()
         if ( redraw ){
             sprintf(sgmenu[0], (slot == 0) ? "Use: SLOT A" : "Use: SLOT B");
             sprintf(sgmenu[1], (device == 0) ? "Device:  MCARD" : "Device: SDCARD");
-            DrawMenu("Save Game Manager", &sgmenu[0], sgmcount, menu);
+            DrawMenu((char*)"Save Game Manager", &sgmenu[0], sgmcount, menu);
         } 
 
         redraw = 1;
@@ -544,7 +540,7 @@ void EmuMenu()
             strcpy(emumenu[4], Settings.InterpolatedSound == TRUE ? "Interpolate ON" : "Interpolate OFF");
             strcpy(emumenu[5], timerstyle == 0 ? "Timer VBLANK" : "Timer CLOCK");
             strcpy(emumenu[6], Settings.MultiPlayer5 == true ? "Multitap ON" : "Multitap OFF");
-            DrawMenu("Emulator Options", &emumenu[0], emumenucount, menu);
+            DrawMenu((char*)"Emulator Options", &emumenu[0], emumenucount, menu);
         }
 
         redraw = 1;
@@ -615,16 +611,16 @@ void EmuMenu()
  * Media Select Screen
  ****************************************************************************/
 
-int mediacount = 4;
 int choosenSDSlot = 0;
+int mediacount = 4;
 
 char mediamenu[4][20] = { 
-    { "Load from DVD" }, { "Load from SDCARD"},
-    { "Dev. SDCARD:SLOT A" }, { "Return to previous" } 
+    { "Load from DVD" }, { "Load from SDCard"},
+    { "SDCard: Slot A" }, { "Return to previous" } 
 };
 int numsdslots = 3;
 char sdslots[3][10] = {
-    { "Slot A" }, { "Slot B" }, { "Front" }
+    { "Slot A" }, { "Slot B" }, { "Wii SD" }
 };
 
 int MediaSelect() {
@@ -635,7 +631,7 @@ int MediaSelect() {
 
     while ( quit == 0 ) {
         if ( redraw )
-            DrawMenu("Load a Game", &mediamenu[0], mediacount, menu);
+            DrawMenu((char*)"Load a Game", &mediamenu[0], mediacount, menu);
         redraw = 0;
 
         j = PAD_ButtonsDown(0);
@@ -652,20 +648,17 @@ int MediaSelect() {
         if ( j & PAD_BUTTON_A ) {
             redraw = 1;
             switch ( menu ) {
-                case 0:	UseSDCARD = 0;
+                case 0: UseSDCARD = 0;
                         UseFrontSDCARD = 0;
                         OpenDVD();
                         return 1;
                         break;
 
                 case 1:	if (choosenSDSlot == 2) {
-                            UseFrontSDCARD = 1;
                             OpenFrontSD();
                         } else {
-                            UseFrontSDCARD = 0;
-                            UseFrontSDCARD = 0;
+                            OpenSD();
                         }
-                        OpenSD();
                         return 1;
                         break;
 
@@ -679,7 +672,8 @@ int MediaSelect() {
                         if (choosenSDSlot > 1)
                             choosenSDSlot = 0;
 #endif
-                        sprintf(mediamenu[2], "Dev. SDCARD: %s", sdslots[choosenSDSlot]);
+                        sprintf(mediamenu[2], "SDCard: %s", sdslots[choosenSDSlot]);
+                        redraw = 1;
                         break;
                 case 3: quit = 1;
                         break;
@@ -688,7 +682,30 @@ int MediaSelect() {
             }
         }
 
-        if ( j & PAD_BUTTON_B ) quit = 1;
+        if ( (j & PAD_BUTTON_RIGHT) && (menu == 2) ) {
+            choosenSDSlot++;
+#ifdef HW_RVL
+            if (choosenSDSlot >= numsdslots)
+                choosenSDSlot = numsdslots - 1;
+#else
+            // Gamecube only gets A/B selection
+            if (choosenSDSlot > 1)
+                choosenSDSlot = 0;
+#endif
+            sprintf(mediamenu[2], "SDCard: %s", sdslots[choosenSDSlot]);
+            redraw = 1;
+        }
+
+        if ( (j & PAD_BUTTON_LEFT) && (menu == 2) ) {
+            choosenSDSlot--;
+            if (choosenSDSlot < 0)
+                choosenSDSlot = 0;
+            sprintf(mediamenu[2], "SDCard: %s", sdslots[choosenSDSlot]);
+            redraw = 1;
+        }
+
+        if ( j & PAD_BUTTON_B )
+            quit = 1;
 
         if ( menu == mediacount  )
             menu = 0;		
@@ -739,7 +756,7 @@ int ConfigMenu() {
     int redraw = 1;
     int quit = 0;
 
-    //void (*PSOReload)() = (void(*)())0x80001800; // 0x90000020 ?
+    void (*PSOReload)() = (void(*)())0x80001800; // 0x90000020 ?
 
     copynow = GX_FALSE;
     Settings.Paused =TRUE;
@@ -752,7 +769,7 @@ int ConfigMenu() {
 
     while ( quit == 0 ) {
         if ( redraw ) {
-            DrawMenu("Snes9x GX Configuration", &configmenu[0], configmenucount, menu);
+            DrawMenu((char*)"Snes9x GX Configuration", &configmenu[0], configmenucount, menu);
         }
 
         redraw = 1;
@@ -795,9 +812,9 @@ int ConfigMenu() {
                     EmuMenu();
                     break;
                 case 7: // Stop DVD Motor
-                    ShowAction("Stopping DVD ... Wait");
+                    ShowAction((char*)"Stopping DVD ... Wait");
                     dvd_motor_off();
-                    WaitPrompt("DVD Motor Stopped");
+                    WaitPrompt((char*)"DVD Motor Stopped");
                     break;
                 case 8 : // PSO Reload
                     PSOReload();
