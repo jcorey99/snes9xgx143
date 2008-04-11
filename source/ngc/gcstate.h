@@ -16,17 +16,17 @@
 
 typedef struct
 {
-    char filename[512];		/*** Way over size - but who cares -;) ***/
-    int filehandle;
-    int currpos;
-    int length;
-    int mode;
-    char *buffer;			/*** Memspace for read / write ***/
+  char filename[512];		/*** Way over size - but who cares -;) ***/
+  int filehandle;
+  int currpos;
+  int length;
+  int mode;
+  char *buffer;			/*** Memspace for read / write ***/
 }
 MEMFILE;
 
-int NGCFreezeGame (int where, bool8 silent);
-int NGCUnfreezeGame (int from, bool8 silent);
+int NGCFreezeGame (int device, int slot);
+int NGCUnfreezeGame (int device, int slot);
 
 //void quickLoadFreeze (bool8 silent);
 //void quickSaveFreeze (bool8 silent);

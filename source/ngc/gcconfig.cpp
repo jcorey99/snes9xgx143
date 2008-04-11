@@ -10,6 +10,7 @@
 #include <snes9x.h>
 #include <soundux.h>
 #include "iplfont.h"
+#include "gcstate.h"
 
 extern unsigned int copynow;
 extern GXRModeObj *vmode;
@@ -45,7 +46,7 @@ int ConfigMenu();
 void SetScreen();
 void ClearScreen();
 
-char *title = "Snes9x 1.43 - GX Edition 0.1.0";
+char *title = "Snes9x 1.43 - GX Edition 0.1.1";
 extern int CARDSLOT;
 
 #define SOFTRESET_ADR ((volatile u32*)0xCC003024)
@@ -364,9 +365,6 @@ void ConfigPAD()
             sprintf(padmenu[5],"ANALOG CLIP   - %d", PADCAL);
             DrawMenu("Gamecube Pad Configuration", &padmenu[0], configpadcount, menu);
         }
-        if (j & PAD_BUTTON_B) {
-            quit = 1;
-        }
 
         redraw = 1;
 
@@ -452,21 +450,28 @@ char sgmenu[5][20] = {
 
 int slot = 0;
 int device = 0;
+char saveTitle[1][20]= {
+	{ "Save SRAM Manager" }
+};
 
-void savegame()
+void savegame(int type) //{0=SRAM, 1=STATE}
 {
     int menu = 0;
     short j;
     int redraw = 1;
     int quit = 0;
 
+    sprintf(saveTitle[0], (!type) ? "Save SRAM Manager" : "Save STATE Manager");
+	sprintf(sgmenu[2], (!type) ? "Save SRAM" : "Save State");
+    sprintf(sgmenu[3], (!type) ? "Load SRAM" : "Load State");
+    
     while ( quit == 0 )
     {
         if ( redraw ){
-            sprintf(sgmenu[0], (slot == 0) ? "Use: SLOT A" : "Use: SLOT B");
-            sprintf(sgmenu[1], (device == 0) ? "Device:  MCARD" : "Device: SDCARD");
-            DrawMenu("Save Game Manager", &sgmenu[0], sgmcount, menu);
-        } 
+			sprintf(sgmenu[0], (slot == 0) ? "Use: SLOT A" : "Use: SLOT B");
+			sprintf(sgmenu[1], (device == 0) ? "Device:  MCARD" : "Device: SDCARD");
+			DrawMenu(saveTitle[0], &sgmenu[0], sgmcount, menu);
+		} 
 
         redraw = 1;
 
@@ -494,10 +499,12 @@ void savegame()
                     device ^= 1;
                     break;
                 case 2 : 
-                    SaveSRAM(1,slot,device); //Save
+                    if (!type) SaveSRAM(1,slot,device); //Save SRAM
+                    else NGCFreezeGame (device, slot); //Save State
                     break;
                 case 3 :
-                    SaveSRAM(0,slot,device);  //Load
+                    if (!type) SaveSRAM(0,slot,device);  //Load SRAM
+                    else NGCUnfreezeGame (device, slot); //Load State
                     break;
                 case 4 :
                     quit = 1; 
@@ -511,6 +518,66 @@ void savegame()
 
         if ( menu == sgmcount ) menu = 0;
     }
+}
+
+/****************************************************************************
+ * File Manager Menu
+ ****************************************************************************/
+int managercount = 3;
+char managermenu[3][20] = {
+	{"SRAM Manager"}, {"STATE Manager"},
+    {"Return to previous"}
+}; 
+ 
+int FileMenu ()
+{
+	int quit = 0;
+	int redraw = 1;
+	short j;
+	int menu = 0;
+
+	while (quit == 0)
+	{
+	
+		if ( redraw ){
+			DrawMenu("Save File Manager", &managermenu[0], managercount, menu);
+		}
+		
+		j = PAD_ButtonsDown(0);
+		
+        if ( j & PAD_BUTTON_DOWN ) {
+            menu++;
+            redraw = 1;
+        }
+
+        if ( j & PAD_BUTTON_UP ) {
+            menu--;
+            redraw = 1;
+        }
+
+		if ( j & PAD_BUTTON_A ) {
+            redraw = 1;
+			switch (menu){
+				case 0:
+					savegame(0);
+					break;
+				case 1:
+					savegame(1);
+					break;
+				case 2:
+					quit = 1;
+					break;
+			}
+		}
+		
+		if ( j & PAD_BUTTON_B ) quit = 1;
+		
+        if ( menu < 0 ) menu = managercount - 1;
+
+        if ( menu == managercount ) menu = 0;
+	}
+
+  return 0;
 }
 
 /****************************************************************************
@@ -593,11 +660,7 @@ void EmuMenu()
                 case 7 : 	
                     quit = 1;
                     break;
-
             }			
-        }
-        if (j & PAD_BUTTON_B) {
-            quit = 1;
         }
 
         if (j & PAD_BUTTON_B) quit = 1;
@@ -624,7 +687,7 @@ char mediamenu[4][20] = {
 
 int numsdslots = 2;
 char sdslots[2][10] = {
-        { "Slot A" }, { "Slot B" }
+    { "Slot A" }, { "Slot B" }
 };
 
 int MediaSelect(){
@@ -636,7 +699,7 @@ int MediaSelect(){
 
     while ( quit == 0 )
     {
-        if ( redraw ) //DrawMenu(&mediamenu[0], mediacount, menu );			
+        if ( redraw )
             DrawMenu("Load a Game", &mediamenu[0], mediacount, menu);
 
         redraw = 0;
@@ -711,7 +774,7 @@ char configmenu[11][20] = {
     { "Play Game" }, 
     { "Reset Emulator" },
     { "Load New Game" }, 
-    { "SRAM Manager" }, 
+    { "File Manager" }, 
     { "ROM Information" }, 
     { "Configure Joypads" },
     { "Emulator Options" }, 
@@ -727,6 +790,7 @@ int ConfigMenu()
     short j;
     int redraw = 1;
     int quit = 0;
+	int isQuiting = 0;
 
     void (*PSOReload)() = (void(*)())0x80001800;
 
@@ -773,8 +837,8 @@ int ConfigMenu()
                 case 2 : // Load New Game
                     MediaSelect();
                     break;
-                case 3 : // SRAM Manager
-                    savegame();
+                case 3 : // File Manager
+					FileMenu ();
                     break;
                 case 4 : // ROM Information
                     Welcome();
@@ -791,6 +855,7 @@ int ConfigMenu()
                     WaitPrompt("DVD Motor Stopped");
                     break;
                 case 8 : // PSO Reload
+					isQuiting = 1;
                     PSOReload();
                     break;
                 case 9 : // Reboot
@@ -805,19 +870,22 @@ int ConfigMenu()
         }
 
         if ( j & PAD_BUTTON_B ) quit = 1;
-        if ( menu < 0 )
-            menu = configmenucount - 1;
 
-        if ( menu == configmenucount )
-            menu = 0;
+        if ( menu < 0 ) menu = configmenucount - 1;
+
+        if ( menu == configmenucount ) menu = 0;
     }
 
     /*** Remove any still held buttons ***/
     while(PAD_ButtonsHeld(0)) VIDEO_WaitVSync();
 
     uselessinquiry ();		/*** Stop the DVD from causing clicks while playing ***/
-
-    Settings.Paused = FALSE;
+	
+	if (!isQuiting){
+		S9xSetSoundMute(FALSE);
+		Settings.Paused = FALSE;
+	}
+	
     return 0;
 }
 

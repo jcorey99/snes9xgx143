@@ -103,6 +103,7 @@
 #include "snaporig.h"
 #endif
 
+#include "snapshot.h"
 #include "memmap.h"
 #include "snes9x.h"
 #include "65c816.h"
@@ -117,8 +118,9 @@
 #include "spc7110.h"
 #include "movie.h"
 
-#include "ngc/memfile.h"
+#include "ngc/gcstate.h"
 #include "gccore.h"
+#include "ngc/gcconfig.h"
 
 extern uint8 *SRAM;
 
@@ -131,6 +133,12 @@ END_EXTERN_C
 #endif
 
 bool8 S9xUnfreezeZSNES (const char *filename);
+
+
+/*int S9xFreezeGame (const char *filename);
+void S9xFreezeToStream (STREAM stream);
+bool8 S9xUnfreezeGame (const char *filename);
+int S9xUnfreezeFromStream (STREAM stream);*/
 
 typedef struct {
     int offset;
@@ -532,8 +540,7 @@ static FreezeData SnapS7RTC [] = {
 static char ROMFilename [_MAX_PATH];
 //static char SnapshotFilename [_MAX_PATH];
 
-void FreezeStruct (STREAM stream, char *name, void *base, FreezeData *fields,
-				   int num_fields);
+void FreezeStruct (STREAM stream, char *name, void *base, FreezeData *fields, int num_fields);
 void FreezeBlock (STREAM stream, char *name, uint8 *block, int size);
 #ifdef NGC
 extern void NGCFreezeBlock (char *name, uint8 *block, int size);
@@ -541,8 +548,7 @@ extern int NGCUnFreezeBlock( char *name, uint8 *block, int size );
 extern int GetMem( char *buffer, int len );
 #endif
 
-int UnfreezeStruct (STREAM stream, char *name, void *base, FreezeData *fields,
-					int num_fields);
+int UnfreezeStruct (STREAM stream, char *name, void *base, FreezeData *fields,int num_fields);
 int UnfreezeBlock (STREAM stream, char *name, uint8 *block, int size);
 
 int UnfreezeStructCopy (STREAM stream, char *name, uint8** block, FreezeData *fields, int num_fields);
@@ -551,12 +557,12 @@ void UnfreezeStructFromCopy (void *base, FreezeData *fields, int num_fields, uin
 
 int UnfreezeBlockCopy (STREAM stream, char *name, uint8** block, int size);
 
-int Snapshot (const char *filename)
+bool8 Snapshot (const char *filename)
 {
     return (S9xFreezeGame (filename));
 }
 
-int S9xFreezeGame (const char *filename)
+bool8 S9xFreezeGame (const char *filename)
 {
     STREAM stream = NULL;
 #ifndef NGC		
@@ -578,9 +584,9 @@ int S9xFreezeGame (const char *filename)
 			S9xMessage (S9X_INFO, S9X_FREEZE_FILE_INFO, String);
 		}
 #endif
-		return (1);
+		return (TRUE);
     }
-    return (0);
+    return (TRUE);
 }
 
 bool8 S9xLoadSnapshot (const char *filename)
@@ -603,20 +609,20 @@ bool8 S9xUnfreezeGame (const char *filename)
 	
 #ifndef NGC	
     if (S9xOpenSnapshotFile (filename, TRUE, &snapshot))
-    {
 #endif
+    {
 		int result;
 		if ((result = S9xUnfreezeFromStream (snapshot)) != SUCCESS)
 		{
 			switch (result)
 			{
 			case WRONG_FORMAT:
-				S9xMessage (S9X_ERROR, S9X_WRONG_FORMAT, 
-					"File not in Snes9x freeze format");
+				S9xMessage (S9X_ERROR, S9X_WRONG_FORMAT, "File not in Snes9x freeze format");
+				WaitPrompt("File not in Snes9x freeze format");
 				break;
 			case WRONG_VERSION:
-				S9xMessage (S9X_ERROR, S9X_WRONG_VERSION,
-					"Incompatable Snes9x freeze file format version");
+				S9xMessage (S9X_ERROR, S9X_WRONG_VERSION,"Incompatable Snes9x freeze file format version");
+				WaitPrompt("Incompatable Snes9x freeze file format version");
 				break;
 			case WRONG_MOVIE_SNAPSHOT:
 				S9xMessage (S9X_ERROR, S9X_WRONG_MOVIE_SNAPSHOT, MOVIE_ERR_SNAPSHOT_WRONG_MOVIE);
@@ -626,12 +632,14 @@ bool8 S9xUnfreezeGame (const char *filename)
 				break;
 			default:
 			case FILE_NOT_FOUND:
-				sprintf (String, "ROM image \"%s\" for freeze file not found",
-					ROMFilename);
+				sprintf (String, "ROM image \"%s\" for freeze file not found",	ROMFilename);
 				S9xMessage (S9X_ERROR, S9X_ROM_NOT_FOUND, String);
+				WaitPrompt(String);
 				break;
 			}
+			#ifndef NGC
 			S9xCloseSnapshotFile (snapshot);
+			#endif
 			return (FALSE);
 		}
 #ifndef NGC
@@ -646,9 +654,7 @@ bool8 S9xUnfreezeGame (const char *filename)
 		return (TRUE);
     }
     return (FALSE);
-#ifndef NGC	
 }
-#endif
 
 void S9xFreezeToStream (STREAM stream)
 {
@@ -671,8 +677,7 @@ void S9xFreezeToStream (STREAM stream)
     }
     sprintf (buffer, "%s:%04d\n", SNAPSHOT_MAGIC, SNAPSHOT_VERSION);
     WRITE_STREAM (buffer, strlen (buffer), stream);
-    sprintf (buffer, "NAM:%06d:%s%c", strlen (Memory.ROMFilename) + 1,
-		Memory.ROMFilename, 0);
+    sprintf (buffer, "NAM:%06d:%s%c", strlen (Memory.ROMFilename) + 1,Memory.ROMFilename, 0);
     WRITE_STREAM (buffer, strlen (buffer) + 1, stream);
     FreezeStruct (stream, "CPU", &CPU, SnapCPU, COUNT (SnapCPU));
     FreezeStruct (stream, "REG", &Registers, SnapRegisters, COUNT (SnapRegisters));
@@ -688,19 +693,16 @@ void S9xFreezeToStream (STREAM stream)
     {
 		// APU
 		FreezeStruct (stream, "APU", &APU, SnapAPU, COUNT (SnapAPU));
-		FreezeStruct (stream, "ARE", &APURegisters, SnapAPURegisters,
-			COUNT (SnapAPURegisters));
+		FreezeStruct (stream, "ARE", &APURegisters, SnapAPURegisters,COUNT (SnapAPURegisters));
 		FreezeBlock (stream, "ARA", IAPU.RAM, 0x10000);
-		FreezeStruct (stream, "SOU", &SoundData, SnapSoundData,
-			COUNT (SnapSoundData));
+		FreezeStruct (stream, "SOU", &SoundData, SnapSoundData,	COUNT (SnapSoundData));
     }
     if (Settings.SA1)
     {
 		SA1Registers.PC = SA1.PC - SA1.PCBase;
 		S9xSA1PackStatus ();
 		FreezeStruct (stream, "SA1", &SA1, SnapSA1, COUNT (SnapSA1));
-		FreezeStruct (stream, "SAR", &SA1Registers, SnapSA1Registers, 
-			COUNT (SnapSA1Registers));
+		FreezeStruct (stream, "SAR", &SA1Registers, SnapSA1Registers, COUNT (SnapSA1Registers));
     }
 	
 	if (Settings.SPC7110)
@@ -759,11 +761,9 @@ int S9xUnfreezeFromStream (STREAM stream)
 		return (result);
 
 #ifndef NGC
-    if (strcasecmp (rom_filename, Memory.ROMFilename) != 0 &&
-		strcasecmp (S9xBasename (rom_filename), S9xBasename (Memory.ROMFilename)) != 0)
+    if (strcasecmp (rom_filename, Memory.ROMFilename) != 0 && strcasecmp (S9xBasename (rom_filename), S9xBasename (Memory.ROMFilename)) != 0)
     {
-		S9xMessage (S9X_WARNING, S9X_FREEZE_ROM_NAME,
-			"Current loaded ROM image doesn't match that required by freeze-game file.");
+		S9xMessage (S9X_WARNING, S9X_FREEZE_ROM_NAME, "Current loaded ROM image doesn't match that required by freeze-game file.");
     }
 #endif
 
@@ -997,8 +997,7 @@ int FreezeSize (int size, int type)
     }
 }
 
-void FreezeStruct (STREAM stream, char *name, void *base, FreezeData *fields,
-				   int num_fields)
+void FreezeStruct (STREAM stream, char *name, void *base, FreezeData *fields, int num_fields)
 {
     // Work out the size of the required block
     int len = 0;
@@ -1007,10 +1006,8 @@ void FreezeStruct (STREAM stream, char *name, void *base, FreezeData *fields,
 	
     for (i = 0; i < num_fields; i++)
     {
-		if (fields [i].offset + FreezeSize (fields [i].size, 
-			fields [i].type) > len)
-			len = fields [i].offset + FreezeSize (fields [i].size, 
-			fields [i].type);
+		if (fields [i].offset + FreezeSize (fields [i].size, fields [i].type) > len)
+			len = fields [i].offset + FreezeSize (fields [i].size, fields [i].type);
     }
 	
     uint8 *block = new uint8 [len];
@@ -1118,28 +1115,25 @@ void NGCFreezeStruct()
     {
         // APU
         FreezeStruct (s,"APU", &APU, SnapAPU, COUNT (SnapAPU));
-        FreezeStruct (s,"ARE", &APURegisters, SnapAPURegisters,
-                      COUNT (SnapAPURegisters));
+        FreezeStruct (s,"ARE", &APURegisters, SnapAPURegisters, COUNT (SnapAPURegisters));
         NGCFreezeBlock ("ARA", IAPU.RAM, 0x10000);
-        FreezeStruct (s,"SOU", &SoundData, SnapSoundData,
-                      COUNT (SnapSoundData));
+        FreezeStruct (s,"SOU", &SoundData, SnapSoundData, COUNT (SnapSoundData));
     }
 
     // Controls
-    struct SControlSnapshot ctl_snap;
-    S9xControlPreSave(&ctl_snap);
-    FreezeStruct (s,"CTL", &ctl_snap, SnapControls, COUNT (SnapControls));
+    //struct SControlSnapshot ctl_snap;
+    //S9xControlPreSave(&ctl_snap);
+    //FreezeStruct (s,"CTL", &ctl_snap, SnapControls, COUNT (SnapControls));
 	
 	// Timings
-	FreezeStruct (s,"TIM", &Timings, SnapTimings, COUNT (SnapTimings));
+	//FreezeStruct (s,"TIM", &Timings, SnapTimings, COUNT (SnapTimings));
 
     // Special chips
     if (Settings.SA1)
     {
         S9xSA1PackStatus ();
         FreezeStruct (s,"SA1", &SA1, SnapSA1, COUNT (SnapSA1));
-        FreezeStruct (s,"SAR", &SA1Registers, SnapSA1Registers, 
-                      COUNT (SnapSA1Registers));
+        FreezeStruct (s,"SAR", &SA1Registers, SnapSA1Registers, COUNT (SnapSA1Registers));
     }
 
     if (Settings.SPC7110)
@@ -1152,17 +1146,17 @@ void NGCFreezeStruct()
         FreezeStruct (s,"RTC", &rtc_f9, SnapS7RTC, COUNT (SnapS7RTC));
     }
 
-	// BS
-	if (Settings.BS)
+	// BS //Not supported in snes9x v1.43
+/*	if (Settings.BS)
 	{
         FreezeStruct (s,"BSX", &BSX, SnapBSX, COUNT (SnapBSX));
 	}	
+*/
 }
 
 #endif
 
-int UnfreezeStruct (STREAM stream, char *name, void *base, FreezeData *fields,
-					int num_fields)
+int UnfreezeStruct (STREAM stream, char *name, void *base, FreezeData *fields,	int num_fields)
 {
     // Work out the size of the required block
     int len = 0;
@@ -1171,10 +1165,8 @@ int UnfreezeStruct (STREAM stream, char *name, void *base, FreezeData *fields,
 	
     for (i = 0; i < num_fields; i++)
     {
-		if (fields [i].offset + FreezeSize (fields [i].size, 
-			fields [i].type) > len)
-			len = fields [i].offset + FreezeSize (fields [i].size, 
-			fields [i].type);
+		if (fields [i].offset + FreezeSize (fields [i].size, fields [i].type) > len)
+			len = fields [i].offset + FreezeSize (fields [i].size, fields [i].type);
     }
 	
     uint8 *block = new uint8 [len];
@@ -1301,10 +1293,8 @@ int UnfreezeStructCopy (STREAM stream, char *name, uint8** block, FreezeData *fi
 	
     for (i = 0; i < num_fields; i++)
     {
-		if (fields [i].offset + FreezeSize (fields [i].size, 
-			fields [i].type) > len)
-			len = fields [i].offset + FreezeSize (fields [i].size, 
-			fields [i].type);
+		if (fields [i].offset + FreezeSize (fields [i].size, fields [i].type) > len)
+			len = fields [i].offset + FreezeSize (fields [i].size, fields [i].type);
     }
 	
     return (UnfreezeBlockCopy (stream, name, block, len));
@@ -1915,4 +1905,3 @@ fread(&temp, 1, 4, fs);
     fclose (fs);
     return (FALSE);
 }
-
