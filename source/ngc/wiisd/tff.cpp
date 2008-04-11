@@ -1054,7 +1054,7 @@ FRESULT f_write (
   CLUST clust;
   BYTE cc;
   FRESULT res;
-  const BYTE *wbuff = buff;
+  const BYTE *wbuff = (BYTE*)buff;
   FATFS *fs = fp->fs;
 
 

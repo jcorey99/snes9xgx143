@@ -874,7 +874,7 @@ int LoadDVDFile( unsigned char *buffer ) {
 
         ShowAction((char*)"Loading Rom Succeeded");
         f_close(&fp);
-
+        f_mount(0, NULL);
         return bytes_read_total;
     }
 #endif
