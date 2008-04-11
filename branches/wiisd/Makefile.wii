@@ -143,4 +143,4 @@ endif
 #---------------------------------------------------------------------------------
 tags:
 	@(cd source; ctags *.cpp *.h \
-	    ngc/*.cpp ngc/*.h )
+	    ngc/*.cpp ngc/*.h ngc/wiisd/*.h ngc/wiisd/*.cpp )

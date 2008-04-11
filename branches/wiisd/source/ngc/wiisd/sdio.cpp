@@ -205,6 +205,50 @@ s32 sd_read(u32 n, u8 *buf)
 	return 0;
 }
 
+s32 sd_write(u32 n, const u8 *buf)
+{
+       s32 r;
+       static u8 buffer[0x200] __attribute__((aligned(32)));
+       static u32 query[9] __attribute__((aligned(32)));
+       static u32 res[4] __attribute__((aligned(32)));
+
+       static ioctlv v[3] __attribute__((aligned(32)));
+
+//     printf("sd_write(%d) called\n", n);
+
+       memcpy(buffer, buf, 0x200);
+       memset(query, 0, 0x24);
+       memset(res, 0, 0x10);
+
+       query[0] = 0x19;
+       query[1] = 3;
+       query[2] = 1;
+       query[3] = n * 0x200;   // arg
+       query[4] = 1;           // block_count
+       query[5] = 0x200;       // sector size
+       query[6] = (u32)buffer; // buffer
+       query[7] = 1;           // ?
+       query[8] = 0;           // ?
+
+       v[0].data = (u32 *)query;
+       v[0].len = 0x24;
+       v[1].data =(u32 *)buffer;
+       v[1].len = 0x200;
+       v[2].data = (u32 *)res;
+       v[2].len = 0x10;
+
+       r = IOS_Ioctlv(sd_fd, 7, 2, 1, v);
+
+       if(r != 0)
+       {
+               printf("sd_write() = %d\n", r);
+               printf("  %x %x %x %x\n", res[0], res[1], res[2], res[3]);
+               return r;
+       }
+
+       return 0;
+}
+
 s32 sd_init()
 {
 	s32 r;

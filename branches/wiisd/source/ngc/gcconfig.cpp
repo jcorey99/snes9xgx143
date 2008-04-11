@@ -442,9 +442,13 @@ void ConfigPAD() {
 
 int sgmcount = 5;
 char sgmenu[5][20] = { 
-    { "Use: SLOT A" }, { "Device:  MCARD" },
+    { "SDCard: Slot A" }, { "Device: MemCard" },
     { "Save SRAM" }, { "Load SRAM" },	
     { "Return to previous" } 
+};
+int numsdslots = 3;
+char sdslots[3][10] = {
+    { "Slot A" }, { "Slot B" }, { "Wii SD" }
 };
 
 int slot = 0;
@@ -460,8 +464,8 @@ void savegame()
     while ( quit == 0 )
     {
         if ( redraw ){
-            sprintf(sgmenu[0], (slot == 0) ? "Use: SLOT A" : "Use: SLOT B");
-            sprintf(sgmenu[1], (device == 0) ? "Device:  MCARD" : "Device: SDCARD");
+            sprintf(sgmenu[0], "SDCard: %s", sdslots[slot]);
+            sprintf(sgmenu[1], "Device: %s", (device == 0) ? "MemCard" : "SDCard");
             DrawMenu((char*)"Save Game Manager", &sgmenu[0], sgmcount, menu);
         } 
 
@@ -485,7 +489,17 @@ void savegame()
             while( PAD_ButtonsDown(0) & PAD_BUTTON_A ) {};
             switch( menu ) {
                 case 0 :
-                    slot ^= 1;
+                    slot++;
+#ifdef HW_RVL
+                    if (slot >= numsdslots)
+                        slot = 0;
+#else
+                    // Gamecube only gets A/B selection
+                    if (slot > 1)
+                        slot = 0;
+#endif
+                    sprintf(sgmenu[0], "SDCard: %s", sdslots[slot]);
+                    redraw = 1;
                     break;
                 case 1 : 
                     device ^= 1;
@@ -501,6 +515,36 @@ void savegame()
                     break;
             }
         } 
+
+        if (j & PAD_BUTTON_RIGHT) {
+            if (menu == 0) {
+                slot++;
+#ifdef HW_RVL
+                if (slot >= numsdslots)
+                    slot = numsdslots - 1;
+#else
+                // Gamecube only gets A/B selection
+                if (slot > 1)
+                    slot = 0;
+#endif
+                sprintf(sgmenu[0], "SDCard: %s", sdslots[slot]);
+                redraw = 1;
+            } else if (menu == 1) {
+                device ^= 1;
+            }
+        }
+
+        if (j & PAD_BUTTON_LEFT) {
+            if (menu == 0) {
+                slot--;
+                if (slot < 0)
+                    slot = 0;
+                sprintf(sgmenu[0], "SDCard: %s", sdslots[slot]);
+                redraw = 1;
+            } else if (menu == 1) {
+                device ^= 1;
+            }
+        }
 
         if (j & PAD_BUTTON_B) quit = 1;
 
@@ -617,10 +661,6 @@ int mediacount = 4;
 char mediamenu[4][20] = { 
     { "Load from DVD" }, { "Load from SDCard"},
     { "SDCard: Slot A" }, { "Return to previous" } 
-};
-int numsdslots = 3;
-char sdslots[3][10] = {
-    { "Slot A" }, { "Slot B" }, { "Wii SD" }
 };
 
 int MediaSelect() {
