@@ -9,7 +9,9 @@
 #include <snes9x.h>
 #include <memmap.h>
 #include "saveicon.h"
+#ifdef HW_RVL
 #include "tff.h"
+#endif
 
 #define SNESDIR "snes9x"
 #define SAVEDIR "saves"
@@ -208,7 +210,7 @@ int SaveToCard( int mode, int outbytes, int slot )
             case 0:	/*** Load a saved SRAM ***/
                 {
                     if ( !CardFileExists(savefilename, slot) )
-                    {	WaitPrompt("No SRAM Save Found");
+                    {	WaitPrompt((char*)"No SRAM Save Found");
                         return 0;
                     }
 
@@ -304,7 +306,7 @@ int SaveToCard( int mode, int outbytes, int slot )
                 break;
         }		
     } else {
-        WaitPrompt("Unable to mount memory card!");
+        WaitPrompt((char*)"Unable to mount memory card!");
     }
     return 0;
 }
@@ -314,19 +316,18 @@ int SaveToCard( int mode, int outbytes, int slot )
  ****************************************************************************/
 int SaveSRAMToSD (int slot, unsigned long datasize) {
     char filepath[1024], msg[1024];
-    int fail = 0;
 
     if (Memory.SRAMSize > 0){
         if ( datasize ) {
-#if HW_RVL
-            FATFS frontfs;
-            FILINFO finfo;
+            int res;
             if (slot == 2) {
+#if HW_RVL
+                FILINFO finfo;
                 ShowAction("Saving SRAM to Wii SD...");
                 sprintf(filepath, "/%s/%s/%08X.srm", SNESDIR, SAVEDIR, Memory.ROMCRC32);
                 FIL fp;
                 WORD written;
-                int res;
+
                 /*if ((res = f_mount(1, &frontfs)) != FR_OK) {
                     sprintf(msg, "f_mount failed, error %d", res);
                     WaitPrompt(msg);
@@ -357,11 +358,10 @@ int SaveSRAMToSD (int slot, unsigned long datasize) {
                 return 1;
 #endif
             } else {
-                ShowAction ("Saving SRAM to SD...");    
+                ShowAction((char*)"Saving SRAM to SD...");    
                 sprintf (filepath, "dev%d:\\%s\\%s\\%08X.srm", slot, SNESDIR, SAVEDIR, Memory.ROMCRC32);
                 sd_file *handle = SDCARD_OpenFile (filepath, "wb");
                 if (handle <= 0) {
-                    char msg[100];
                     sprintf(msg, "Couldn't save %s", filepath);
                     WaitPrompt (msg);
                     return 0;
@@ -399,7 +399,7 @@ int LoadSRAMFromSD (int slot)
         FIL fp;
         WORD bytes_read;
         u32 bytes_read_total;
-        FATFS frontfs;
+        //FATFS frontfs;
         FILINFO finfo;
         int res;
         /*if ((res = f_mount(0, &frontfs)) != FR_OK) {
