@@ -702,13 +702,14 @@ int MediaSelect() {
                         sprintf(mediamenu[1], "SDCard: %s", sdslots[choosenSDSlot]);
                         redraw = 1;
                         break;
-                case 2: if (isWii) {
+                case 2: if (isWii)
+                            quit = 1;
+                        else {
                             UseSDCARD = 0;
                             UseFrontSDCARD = 0;
                             OpenDVD();
                             return 1;
-                        } else
-                            quit = 1;
+                        }
                         break;
                 case 3: quit = 1;
                         break;
