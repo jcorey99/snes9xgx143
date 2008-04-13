@@ -24,7 +24,9 @@ extern void AnimFrame();
 extern int SaveTheSRAM( int mode, int slot, int type);
 extern int OpenDVD();
 extern int OpenSD();
+#ifdef HW_RVL
 extern int OpenFrontSD();
+#endif
 extern void dvd_motor_off();
 extern int timerstyle;
 extern int PADCAL;
@@ -464,8 +466,9 @@ void savegame() {
 
     if (!isWii)
         numsdslots = 2;
-    else
-        slot = 2;
+#if HW_RVL
+    slot = 2;
+#endif
 
     while ( quit == 0 ) {
         if ( redraw ){
@@ -649,12 +652,13 @@ void EmuMenu()
  ****************************************************************************/
 
 int choosenSDSlot = 0;
-int mediacount = 4;
+int mediacount = 5;
 
-char mediamenu[4][20] = { 
+char mediamenu[5][20] = { 
     { "Load from SDCard"},
     { "SDCard: Wii SD" },
     { "Load from DVD" },
+    { "Stop DVD Motor" },
     { "Return to previous" } 
 };
 
@@ -664,11 +668,13 @@ int MediaSelect() {
     short j;
     int redraw = 1;
 
-    if (isWii) { // drop Load from DVD
-        strcpy(mediamenu[2], mediamenu[3]);
-        mediacount = 3;
-        choosenSDSlot = 2; // default to WiiSD
-    } else numsdslots = 2;
+#ifdef HW_RVL
+    strcpy(mediamenu[2], mediamenu[4]);
+    mediacount = 3;
+    choosenSDSlot = 2; // default to WiiSD
+#else
+    numsdslots = 2;
+#endif
 
     while ( quit == 0 ) {
         if ( redraw )
@@ -689,9 +695,12 @@ int MediaSelect() {
         if ( j & PAD_BUTTON_A ) {
             redraw = 1;
             switch ( menu ) {
-                case 0:	if (choosenSDSlot == 2) {
+                case 0:
+#ifdef HW_RVL
+                        if (choosenSDSlot == 2) {
                             OpenFrontSD();
                         } else
+#endif
                             OpenSD();
                         return 1;
                         break;
@@ -702,16 +711,21 @@ int MediaSelect() {
                         sprintf(mediamenu[1], "SDCard: %s", sdslots[choosenSDSlot]);
                         redraw = 1;
                         break;
-                case 2: if (isWii)
-                            quit = 1;
-                        else {
-                            UseSDCARD = 0;
-                            UseFrontSDCARD = 0;
-                            OpenDVD();
-                            return 1;
-                        }
+                case 2: 
+#ifdef HW_RVL
+                        quit = 1;
+#else
+                        UseSDCARD = 0;
+                        UseFrontSDCARD = 0;
+                        OpenDVD();
+                        return 1;
+#endif
                         break;
-                case 3: quit = 1;
+                case 3:
+                        ShowAction((char*)"Stopping DVD ... Wait");
+                        dvd_motor_off();
+                        WaitPrompt((char*)"DVD Motor Stopped");
+                case 4: quit = 1;
                         break;
                 default: break ;
             }
@@ -763,8 +777,8 @@ int MediaSelect() {
  *	1.8 View Credits
  *	1.9 Return to Game
  ****************************************************************************/
-int configmenucount = 11;
-char configmenu[11][20] = {
+int configmenucount = 10;
+char configmenu[10][20] = {
     { "Play Game" }, 
     { "Reset Emulator" },
     { "Load New Game" }, 
@@ -772,9 +786,13 @@ char configmenu[11][20] = {
     { "ROM Information" }, 
     { "Configure Joypads" },
     { "Emulator Options" }, 
-    { "Stop DVD Motor" }, 
+#ifdef HW_RVL
+    { "TP Reload" },
+    { "Reboot Wii" },
+#else
     { "PSO Reload" },
     { "Reboot Gamecube" }, 
+#endif
     { "View Credits" }  
 };
 
@@ -790,11 +808,6 @@ int ConfigMenu() {
     copynow = GX_FALSE;
     Settings.Paused =TRUE;
     S9xSetSoundMute(TRUE);
-
-    if (isWii) {
-        strcpy(configmenu[9], "Reboot Wii");
-        strcpy(configmenu[8], "TP Reload");
-    }
 
     while ( quit == 0 ) {
         if ( redraw ) {
@@ -840,18 +853,19 @@ int ConfigMenu() {
                 case 6 : // Emulator Options
                     EmuMenu();
                     break;
-                case 7: // Stop DVD Motor
+                /*case 7: // Stop DVD Motor
                     ShowAction((char*)"Stopping DVD ... Wait");
                     dvd_motor_off();
                     WaitPrompt((char*)"DVD Motor Stopped");
                     break;
-                case 8 : // PSO Reload
+                */
+                case 7 : // PSO Reload
                     PSOReload();
                     break;
-                case 9 : // Reboot
+                case 8 : // Reboot
                     *SOFTRESET_ADR = 0x00000000;
                     break;
-                case 10 : // View Credits
+                case 9 : // View Credits
                     credits();
                     break;
                 default :
