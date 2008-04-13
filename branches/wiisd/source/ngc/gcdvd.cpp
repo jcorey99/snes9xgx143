@@ -340,21 +340,18 @@ int getfiles( int filecount ) {
     int j;
     u32 offset32;
 
-//ShowAction((char*)"getfiles() 1");
     /*** Do some basic checks ***/
     if ( filecount >= MAXFILES ) return 0;
     if ( diroffset >= 2048 ) return 0;
 
     /*** Now decode this entry ***/
     if ( readbuffer[diroffset] != 0 ) {
-//ShowAction((char*)"getfiles() 2");
         /* Update offsets into sector buffer */
         ptr = (char *)&readbuffer[0];
         ptr += diroffset;
         filename = ptr + FILENAME;
         filenamelength = ptr + FILENAME_LENGTH;
 
-//ShowAction((char*)"getfiles() 3");
         /* Check for wrap round - illegal in ISO spec,
          * but certain crap writers do it! */
         if ( diroffset + readbuffer[diroffset] > 2048 ) return 0;
@@ -362,7 +359,6 @@ int getfiles( int filecount ) {
         if ( *filenamelength ) {
             memset(&fname, 0, 512);
 
-//ShowAction((char*)"getfiles() 4");
             /*** Return the values needed ***/
             if (!IsJoliet)
                 strcpy(fname, filename);
@@ -377,7 +373,6 @@ int getfiles( int filecount ) {
                 if ( strlen(fname) == 0 ) fname[0] = filename[0];
             }
 
-//ShowAction((char*)"getfiles() 5");
             if ( strlen(fname) == 0 ) strcpy(fname,"ROOT");
             else {
                 if ( fname[0] == 1 ) strcpy(fname,"..");
@@ -392,20 +387,17 @@ int getfiles( int filecount ) {
                 }
             }
 
-//ShowAction((char*)"getfiles() 6");
             /** Rockridge Check **/ /*** Remove any trailing ;1 from ISO name ***/
             rr = strstr (fname, ";"); //if ( fname[ strlen(fname) - 2 ] == ';' )
             if (rr != NULL) *rr = 0;  //fname[ strlen(fname) - 2 ] = 0;*/
 
-//ShowAction((char*)"getfiles() 7");
             strcpy(filelist[filecount].filename, fname);
             memcpy(&offset32, &readbuffer[diroffset + EXTENT], 4);
             filelist[filecount].offset = (u64)offset32;
             memcpy(&filelist[filecount].length, &readbuffer[diroffset + FILE_LENGTH], 4);
             memcpy(&filelist[filecount].flags, &readbuffer[diroffset + FILE_FLAGS], 1);
 char msg[1024];
-//sprintf(msg, "fname=%s, off=%X, len=%d, flag=%d", fname, offset32, filelist[filecount].length, filelist[filecount].flags);
-sprintf(msg, "Adding file#%d, %s", filecount, fname);
+sprintf(msg, "Adding file#%d: %s", filecount, fname);
 ShowAction(msg);
 
             filelist[filecount].offset <<= 11;
@@ -414,7 +406,6 @@ ShowAction(msg);
             /*** Prepare for next entry ***/
             diroffset += readbuffer[diroffset];
 
-//ShowAction((char*)"getfiles() 9");
             return 1;
         } 		
     }
@@ -439,14 +430,9 @@ int parsedir() {
 
     /*** Clear any existing values ***/
     memset(&filelist, 0, sizeof(FILEENTRIES) * MAXFILES);
-ShowAction((char*)"parsedir() 1");
     /*** Get as many files as possible ***/			
     while ( len < pdlength ) {
-ShowAction((char*)"parsedir() 2");
         int r = dvd_read(&readbuffer, 2048, pdoffset);
-char msg[1024];
-sprintf(msg, "parsedir() r=%d", r);
-ShowAction(msg);
         //if (dvd_read (&readbuffer, 2048, pdoffset) == 0)
         if (r == 0)
             return 0;
@@ -951,7 +937,6 @@ static int havedir = 0;
 int OpenDVD() {
     haveSDdir = 0;
 
-ShowAction((char*)"OpenDVD 1");
     // Mount the DVD if necessary
     if (!IsPVD()) {
         ShowAction((char*)"Mounting DVD");
@@ -963,15 +948,12 @@ ShowAction((char*)"OpenDVD 1");
         }
     }
 
-ShowAction((char*)"OpenDVD 2");
     /*** At this point I should have an unlocked DVD ... so let's do the ISO ***/
     if ( havedir != 1 ) {
         if ( IsPVD() ) {
             /*** Have a valid PVD, so start reading directory entries ***/
-ShowAction((char*)"OpenDVD 3");
             maxfiles = parsedir();	
             if ( maxfiles ) {
-ShowAction((char*)"OpenDVD 4");
                 offset = selection = 0;
                 FileSelector();
                 havedir = 1;
@@ -980,7 +962,6 @@ ShowAction((char*)"OpenDVD 4");
             return 0;
         }
     } else  {
-ShowAction((char*)"OpenDVD 5");
         FileSelector();
     }
 
