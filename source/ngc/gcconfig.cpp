@@ -21,7 +21,7 @@ extern unsigned int blit_lookup[4];
 extern unsigned int blit_lookup_inv[4];
 extern void GetISODirectory();
 extern void AnimFrame();
-extern int SaveSRAM( int mode, int slot, int type);
+extern int SaveTheSRAM( int mode, int slot, int type);
 extern int OpenDVD();
 extern int OpenSD();
 extern int OpenFrontSD();
@@ -165,10 +165,10 @@ void Welcome()
 {
 
     char work[1024];
-    char titles[9][10] = {
+    char titles[10][10] = {
         { "ROM" }, { "ROM ID" }, { "Company" },
         { "Size" }, { "SRAM" }, { "Type" },
-        { "Checksum" }, { "TV Type" }, { "Frames" } };
+        { "Checksum" }, { "TV Type" }, { "Frames" }, { "CRC32" } };
     int p = 96;
     int i;
     int quit = 0;
@@ -184,7 +184,7 @@ void Welcome()
         write_font(CentreTextPosition(title) , ( 480 - ( 16 * font_height )) >> 1 , title);
 
         /*** Print titles ***/
-        for ( i = 0; i < 9; i++ )
+        for ( i = 0; i < 10; i++ )
             write_font( 48, p += font_height, titles[i]);
 
         /*** Show some basic ROM information ***/
@@ -203,6 +203,8 @@ void Welcome()
         sprintf(work, "%s", Settings.PAL ? "PAL" : "NTSC");
         write_font( 592 - GetTextWidth(work), p += font_height, work);
         sprintf(work, "%d", Memory.ROMFramesPerSecond);
+        write_font( 592 - GetTextWidth(work), p += font_height, work);
+        sprintf(work, "%08X", Memory.ROMCRC32);
         write_font( 592 - GetTextWidth(work), p += font_height, work);
 
         strcpy(work,"Enjoy the past!");
@@ -448,21 +450,24 @@ char sgmenu[5][20] = {
 };
 int numsdslots = 3;
 char sdslots[3][10] = {
-    { "Slot A" }, { "Slot B" }, { "Wii SD" }
+    { "Slot A" }, { "Slot B" }, { "Wii SD"}
 };
 
 int slot = 0;
-int device = 0;
+int device = 1;
 
-void savegame()
-{
+void savegame() {
     int menu = 0;
     short j;
     int redraw = 1;
     int quit = 0;
 
-    while ( quit == 0 )
-    {
+    if (!isWii)
+        numsdslots = 2;
+    else
+        slot = 2;
+
+    while ( quit == 0 ) {
         if ( redraw ){
             sprintf(sgmenu[0], "SDCard: %s", sdslots[slot]);
             sprintf(sgmenu[1], "Device: %s", (device == 0) ? "MemCard" : "SDCard");
@@ -490,14 +495,8 @@ void savegame()
             switch( menu ) {
                 case 0 :
                     slot++;
-#ifdef HW_RVL
                     if (slot >= numsdslots)
                         slot = 0;
-#else
-                    // Gamecube only gets A/B selection
-                    if (slot > 1)
-                        slot = 0;
-#endif
                     sprintf(sgmenu[0], "SDCard: %s", sdslots[slot]);
                     redraw = 1;
                     break;
@@ -505,10 +504,10 @@ void savegame()
                     device ^= 1;
                     break;
                 case 2 : 
-                    SaveSRAM(1,slot,device); //Save
+                    SaveTheSRAM(1,slot,device); //Save
                     break;
                 case 3 :
-                    SaveSRAM(0,slot,device);  //Load
+                    SaveTheSRAM(0,slot,device);  //Load
                     break;
                 case 4 :
                     quit = 1; 
@@ -519,14 +518,8 @@ void savegame()
         if (j & PAD_BUTTON_RIGHT) {
             if (menu == 0) {
                 slot++;
-#ifdef HW_RVL
                 if (slot >= numsdslots)
                     slot = numsdslots - 1;
-#else
-                // Gamecube only gets A/B selection
-                if (slot > 1)
-                    slot = 0;
-#endif
                 sprintf(sgmenu[0], "SDCard: %s", sdslots[slot]);
                 redraw = 1;
             } else if (menu == 1) {
@@ -659,8 +652,10 @@ int choosenSDSlot = 0;
 int mediacount = 4;
 
 char mediamenu[4][20] = { 
-    { "Load from DVD" }, { "Load from SDCard"},
-    { "SDCard: Slot A" }, { "Return to previous" } 
+    { "Load from SDCard"},
+    { "SDCard: Wii SD" },
+    { "Load from DVD" },
+    { "Return to previous" } 
 };
 
 int MediaSelect() {
@@ -668,6 +663,12 @@ int MediaSelect() {
     int quit = 0;
     short j;
     int redraw = 1;
+
+    if (isWii) { // drop Load from DVD
+        strcpy(mediamenu[2], mediamenu[3]);
+        mediacount = 3;
+        choosenSDSlot = 2; // default to WiiSD
+    } else numsdslots = 2;
 
     while ( quit == 0 ) {
         if ( redraw )
@@ -688,59 +689,46 @@ int MediaSelect() {
         if ( j & PAD_BUTTON_A ) {
             redraw = 1;
             switch ( menu ) {
-                case 0: UseSDCARD = 0;
-                        UseFrontSDCARD = 0;
-                        OpenDVD();
-                        return 1;
-                        break;
-
-                case 1:	if (choosenSDSlot == 2) {
+                case 0:	if (choosenSDSlot == 2) {
                             OpenFrontSD();
-                        } else {
+                        } else
                             OpenSD();
-                        }
                         return 1;
                         break;
-
-                case 2:
+                case 1:
                         choosenSDSlot++;
-#ifdef HW_RVL
                         if (choosenSDSlot >= numsdslots)
                             choosenSDSlot = 0;
-#else
-                        // Gamecube only gets A/B selection
-                        if (choosenSDSlot > 1)
-                            choosenSDSlot = 0;
-#endif
                         sprintf(mediamenu[2], "SDCard: %s", sdslots[choosenSDSlot]);
                         redraw = 1;
                         break;
+                case 2: if (isWii) {
+                            UseSDCARD = 0;
+                            UseFrontSDCARD = 0;
+                            OpenDVD();
+                            return 1;
+                        } else
+                            quit = 1;
+                        break;
                 case 3: quit = 1;
                         break;
-
                 default: break ;
             }
         }
 
-        if ( (j & PAD_BUTTON_RIGHT) && (menu == 2) ) {
+        if ( (j & PAD_BUTTON_RIGHT) && (menu == 1) ) {
             choosenSDSlot++;
-#ifdef HW_RVL
             if (choosenSDSlot >= numsdslots)
                 choosenSDSlot = numsdslots - 1;
-#else
-            // Gamecube only gets A/B selection
-            if (choosenSDSlot > 1)
-                choosenSDSlot = 0;
-#endif
-            sprintf(mediamenu[2], "SDCard: %s", sdslots[choosenSDSlot]);
+            sprintf(mediamenu[1], "SDCard: %s", sdslots[choosenSDSlot]);
             redraw = 1;
         }
 
-        if ( (j & PAD_BUTTON_LEFT) && (menu == 2) ) {
+        if ( (j & PAD_BUTTON_LEFT) && (menu == 1) ) {
             choosenSDSlot--;
             if (choosenSDSlot < 0)
                 choosenSDSlot = 0;
-            sprintf(mediamenu[2], "SDCard: %s", sdslots[choosenSDSlot]);
+            sprintf(mediamenu[1], "SDCard: %s", sdslots[choosenSDSlot]);
             redraw = 1;
         }
 

@@ -592,7 +592,6 @@ int parseWiiSDdirectory() {
     int nbfiles = 0;
     int numstored = 0;
     DIRECTORY sddir;
-    FILINFO finfo;
     s32 result;
     char msg[1024];
 
@@ -602,7 +601,7 @@ int parseWiiSDdirectory() {
     /* Get a list of files from the actual root directory */ 
     result = f_opendir(&sddir, rootWiiSDdir);
     if(result != FR_OK) {
-        sprintf(msg, "f_opendir(%s) failed with %d.\n", rootWiiSDdir, result);
+        sprintf(msg, "f_opendir(%s) failed with %d.", rootWiiSDdir, result);
         WaitPrompt(msg);
         return 0;
     }
@@ -623,7 +622,7 @@ int parseWiiSDdirectory() {
         //if(!(finfo.fattrib & AM_DIR))
         //{
             if (strcmp((const char*)finfo.fname, ".") != 0) { // Skip "." directory
-                sprintf(msg, "Adding %s\n", finfo.fname);
+                sprintf(msg, "Adding %s", finfo.fname);
                 //ShowAction(msg);
                 memset(&filelist[numstored], 0, sizeof (FILEENTRIES));
                 strncpy(filelist[numstored].filename,(const char*)finfo.fname,MAXJOLIET);
@@ -792,17 +791,18 @@ void FileSelector()
             } else {
                 if (UseFrontSDCARD) {
                     strncpy(finfo.fname, filelist[selection].filename, 12);
-                        finfo.fname[12] = 0;
-                        finfo.fsize = filelist[selection].length;
-                        finfo.fattrib = filelist[selection].flags ? AM_DIR : 0;
+                    int l = strlen(finfo.fname);
+                    if (l > 12) l = 12;
+                    finfo.fname[l] = 0;
+                    finfo.fsize = filelist[selection].length;
+                    finfo.fattrib = filelist[selection].flags ? AM_DIR : 0;
                 }
                 rootdir = filelist[selection].offset;
                 rootdirlength = filelist[selection].length;
                 /*** Put ROM Load Routine Here :) ***/
                 LoadFromDVD = 1;
                 Memory.LoadROM( "DVD" );
-                if (!UseFrontSDCARD)
-                    Memory.LoadSRAM( "DVD" );
+                Memory.LoadSRAM( "DVD" ); // doesn't do anything
                 haverom = 1;
             }
             redraw = 1;
@@ -831,8 +831,7 @@ int LoadDVDFile( unsigned char *buffer ) {
         char filename[1024];
         sprintf(filename, "%s/%s", rootWiiSDdir, finfo.fname);
 
-        /*if(f_mount(0, &frontfs) != FR_OK)
-        {
+        /*if(f_mount(0, &frontfs) != FR_OK) {
             WaitPrompt("f_mount failed");
             return 0;
         }*/
@@ -840,8 +839,9 @@ int LoadDVDFile( unsigned char *buffer ) {
         int res = f_stat(filename, &finfo);
         if(res != FR_OK) {
             char msg[1024];
-            sprintf(msg, "f_stat failed, error %d", res);
+            sprintf(msg, "f_stat %s failed, error %d", filename, res);
             WaitPrompt(msg);
+            //f_mount(0, NULL);
             return 0;
         }
 
@@ -850,6 +850,7 @@ int LoadDVDFile( unsigned char *buffer ) {
             char msg[1024];
             sprintf(msg, "f_open failed, error %d", res);
             WaitPrompt(msg);
+            //f_mount(0, NULL);
             return 0;
         }
 
@@ -858,6 +859,8 @@ int LoadDVDFile( unsigned char *buffer ) {
         while(bytes_read_total < finfo.fsize) {
             if(f_read(&fp, buffer + bytes_read_total, 0x200, &bytes_read) != FR_OK) {
                 WaitPrompt((char*)"f_read failed");
+                f_close(&fp);
+                //f_mount(0, NULL);
                 return 0;
             }
 
@@ -869,12 +872,14 @@ int LoadDVDFile( unsigned char *buffer ) {
         if(bytes_read_total < finfo.fsize) {
             //printf("error: read %u of %u bytes.\n", bytes_read_total, (unsigned int)finfo.fsize);
             WaitPrompt((char*)"read failed : over read!");
+            f_close(&fp);
+            //f_mount(0, NULL);
             return 0;
         }
 
         ShowAction((char*)"Loading Rom Succeeded");
         f_close(&fp);
-        f_mount(0, NULL);
+        //f_mount(0, NULL);
         return bytes_read_total;
     }
 #endif
@@ -966,6 +971,7 @@ int OpenFrontSD () {
     //return 1;
     UseFrontSDCARD = 1;
     UseSDCARD = 0;
+    haveSDdir = 0;
     char msg[128];
 
     if (haveWiiSDdir == 0) {
@@ -995,11 +1001,13 @@ int OpenFrontSD () {
             /* no entries found */
             sprintf (msg, "Error reading %s", rootWiiSDdir);
             WaitPrompt (msg);
+            //f_mount(0, NULL);
             return 0;
         }
     }
     /* Retrieve previous entries list and made a new selection */
     else  FileSelector ();
+    //f_mount(0, NULL);
 
     return 1;
 #endif

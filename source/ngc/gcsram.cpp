@@ -14,8 +14,6 @@
 #define SNESDIR "snes9x"
 #define SAVEDIR "saves"
 
-extern FATFS frontfs;
-extern FILINFO finfo;
 extern void WaitPrompt( char *msg );
 extern void ShowAction( char *msg );
 static u8 SysArea[CARD_WORKAREA] ATTRIBUTE_ALIGN(32);
@@ -314,33 +312,46 @@ int SaveToCard( int mode, int outbytes, int slot )
 /****************************************************************************
  * Save SRAM to SD Card
  ****************************************************************************/
-int SaveSRAMToSD (int slot, unsigned long datasize)
-{
-    char filepath[1024];
+int SaveSRAMToSD (int slot, unsigned long datasize) {
+    char filepath[1024], msg[1024];
+    int fail = 0;
 
     if (Memory.SRAMSize > 0){
-        if ( datasize )
-        {
+        if ( datasize ) {
 #if HW_RVL
+            FATFS frontfs;
+            FILINFO finfo;
             if (slot == 2) {
                 ShowAction("Saving SRAM to Wii SD...");
                 sprintf(filepath, "/%s/%s/%08X.srm", SNESDIR, SAVEDIR, Memory.ROMCRC32);
                 FIL fp;
                 WORD written;
-                char msg[100];
-                if(f_mount(0, &frontfs) == FR_OK) {
-                    if (f_open(&fp, filepath, FA_CREATE_ALWAYS | FA_WRITE) == FR_OK) {
-                        if (f_write(&fp, savebuffer, datasize, &written) == FR_OK) {
-                            if (written == datasize) {
-                                sprintf(msg, "Saved %d bytes.", written);
-                                WaitPrompt(msg);
-                                f_close(&fp);
-                                f_mount(0, NULL);
-                                return 0;
-                            } else WaitPrompt("failed size mismatch");
-                        } else WaitPrompt("failed f_write");
-                    } else WaitPrompt("failed f_open");
-                } else WaitPrompt("failed f_mount");
+                int res;
+                /*if ((res = f_mount(1, &frontfs)) != FR_OK) {
+                    sprintf(msg, "f_mount failed, error %d", res);
+                    WaitPrompt(msg);
+                    return 1;
+                }*/
+                if ((res = f_open(&fp, filepath, FA_CREATE_ALWAYS | FA_WRITE)) != FR_OK) {
+                    sprintf(msg, "f_open failed, error %d", res);
+                    WaitPrompt(msg);
+                    //f_mount(0, NULL);
+                    return 1;
+                }
+                if ((res = f_write(&fp, savebuffer, datasize, &written)) != FR_OK) {
+                    sprintf(msg, "f_write failed, error %d", res);
+                    WaitPrompt(msg);
+                    f_close(&fp);
+                    //f_mount(0, NULL);
+                    return 1;
+                }
+                if (written == datasize) {
+                    sprintf(msg, "Saved %d bytes.", written);
+                    WaitPrompt(msg);
+                    f_close(&fp);
+                    //f_mount(0, NULL);
+                    return 0;
+                } else WaitPrompt("write failed, size mismatch");
                 sprintf(msg, "Unable to save %s", filepath);
                 WaitPrompt(msg);
                 return 1;
@@ -388,21 +399,31 @@ int LoadSRAMFromSD (int slot)
         FIL fp;
         WORD bytes_read;
         u32 bytes_read_total;
-        if(f_mount(0, &frontfs) == FR_OK) {
-            int res = f_stat(filepath, &finfo);
-            if(res != FR_OK) {
+        FATFS frontfs;
+        FILINFO finfo;
+        int res;
+        /*if ((res = f_mount(0, &frontfs)) != FR_OK) {
+            sprintf(msg, "f_mount failed, error %d", res);
+            WaitPrompt(msg);
+            return 0;
+        }*/
+        res = f_stat(filepath, &finfo);
+        if(res != FR_OK) {
+            if (res == FR_NO_FILE) {
+                sprintf(msg, "Unable to find %s.", filepath);
+            }
+            else {
                 sprintf(msg, "f_stat failed, error %d", res);
-                WaitPrompt(msg);
-                return 0;
             }
-            res = f_open(&fp, filepath, FA_OPEN_EXISTING | FA_READ);
-            if (res != FR_OK) {
-                sprintf(msg, "Failed to open %s.", filepath);
-                WaitPrompt(msg);
-                return 0;
-            }
-        } else {
-            WaitPrompt("failed f_mount");
+            WaitPrompt(msg);
+            //f_mount(0, NULL);
+            return 0;
+        }
+        res = f_open(&fp, filepath, FA_READ);
+        if (res != FR_OK) {
+            sprintf(msg, "Failed to open %s, error %d.", filepath, res);
+            WaitPrompt(msg);
+            //f_mount(0, NULL);
             return 0;
         }
 
@@ -410,6 +431,8 @@ int LoadSRAMFromSD (int slot)
         while(bytes_read_total < finfo.fsize) {
             if (f_read(&fp, &savebuffer[bytes_read_total], 0x200, &bytes_read) != FR_OK) {
                 WaitPrompt((char*)"f_read failed");
+                f_close(&fp);
+                //f_mount(0, NULL);
                 return 0;
             }
 
@@ -420,11 +443,13 @@ int LoadSRAMFromSD (int slot)
 
         if (bytes_read_total < finfo.fsize) {
             WaitPrompt((char*)"read failed");
+            f_close(&fp);
+            //f_mount(0, NULL);
             return 0;
         }
 
         f_close(&fp);
-        f_mount(0, NULL);
+        //f_mount(0, NULL);
         offset = bytes_read_total;
 #endif
     } else {
@@ -468,7 +493,7 @@ int LoadSRAMFromSD (int slot)
 }
 
 //{ mode : {0=Save, 1=Load}, slot:{0=SlotA, 1=SlotB, 2=WiiSD}, type:{0=MCard, 1=SDCard} }
-int SaveSRAM( int mode, int slot, int type)
+int SaveTheSRAM( int mode, int slot, int type)
 {
     unsigned long size;
     unsigned long outbytes;
@@ -489,7 +514,7 @@ int SaveSRAM( int mode, int slot, int type)
         if (outbytes == 0)
             return 0;
 
-        if (type == 0){ //Save in MCard else in SDCard
+        if (type == 1){ //Save in MCard else in SDCard
             memcpy(&savebuffer[sizeof(saveicon) + 68], (unsigned char *)Memory.SRAM, outbytes);
             PackInfo();
             result = SaveToCard(1, outbytes, slot);
