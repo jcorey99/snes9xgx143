@@ -677,9 +677,11 @@ int MediaSelect() {
 #endif
 
     while ( quit == 0 ) {
-        if ( redraw )
+        if ( redraw ) {
+            sprintf(mediamenu[1], "SDCard: %s", sdslots[choosenSDSlot]);
             DrawMenu((char*)"Load a Game", &mediamenu[0], mediacount, menu);
-        redraw = 0;
+            redraw = 0;
+        }
 
         j = PAD_ButtonsDown(0);
         if ( j & PAD_BUTTON_DOWN ) {
@@ -735,7 +737,6 @@ int MediaSelect() {
             choosenSDSlot++;
             if (choosenSDSlot >= numsdslots)
                 choosenSDSlot = numsdslots - 1;
-            sprintf(mediamenu[1], "SDCard: %s", sdslots[choosenSDSlot]);
             redraw = 1;
         }
 
@@ -743,7 +744,6 @@ int MediaSelect() {
             choosenSDSlot--;
             if (choosenSDSlot < 0)
                 choosenSDSlot = 0;
-            sprintf(mediamenu[1], "SDCard: %s", sdslots[choosenSDSlot]);
             redraw = 1;
         }
 
