@@ -470,20 +470,21 @@ void savegame(int type) { // 0=SRAM, 1=STATE
         numsdslots = 2;
 #if HW_RVL
     slot = 2;
+    device = 0;
 #endif
-
-    sprintf(saveTitle, "Save %s Manager", type ? "STATE" : "SRAM");
-    sprintf(sgmenu[2], "Save %s", type ? "State" : "SRAM");
-    sprintf(sgmenu[3], "Load %s", type ? "State" : "SRAM");
 
     while ( quit == 0 ) {
         if ( redraw ){
+            sprintf(saveTitle, "Save %s Manager", type ? "STATE" : "SRAM");
+            sprintf(sgmenu[2], "Save %s", type ? "State" : "SRAM");
+            sprintf(sgmenu[3], "Load %s", type ? "State" : "SRAM");
+
             sprintf(sgmenu[0], "SDCard: %s", sdslots[slot]);
             sprintf(sgmenu[1], "Device: %s", (device == 0) ? "MemCard" : "SDCard");
             DrawMenu(saveTitle, &sgmenu[0], sgmcount, menu);
+            redraw = 0;
         } 
 
-        redraw = 1;
 
         j = PAD_ButtonsDown(0);
 
@@ -511,6 +512,7 @@ void savegame(int type) { // 0=SRAM, 1=STATE
                     break;
                 case 1 : 
                     device ^= 1;
+                    redraw = 1;
                     break;
                 case 2 : 
                     if (type) NGCFreezeGame(device, slot); // Save State
@@ -535,6 +537,7 @@ void savegame(int type) { // 0=SRAM, 1=STATE
                 redraw = 1;
             } else if (menu == 1) {
                 device ^= 1;
+                redraw = 1;
             }
         }
 
@@ -547,6 +550,7 @@ void savegame(int type) { // 0=SRAM, 1=STATE
                 redraw = 1;
             } else if (menu == 1) {
                 device ^= 1;
+                redraw = 1;
             }
         }
 
@@ -593,10 +597,10 @@ int SaveMenu () {
         if ( j & PAD_BUTTON_A ) {
             redraw = 1;
             switch (menu){
-                case 0:
+                case 0: // SRAM
                     savegame(0);
                     break;
-                case 1:
+                case 1: // State
                     savegame(1);
                     break;
                 case 2:
