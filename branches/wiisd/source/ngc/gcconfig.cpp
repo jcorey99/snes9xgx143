@@ -9,6 +9,7 @@
 #include <memmap.h>
 #include <snes9x.h>
 #include <soundux.h>
+#include "gcstate.h"
 #include "iplfont.h"
 
 extern unsigned int copynow;
@@ -49,7 +50,7 @@ int ConfigMenu();
 void SetScreen();
 void ClearScreen();
 
-char *title = (char*)"Snes9x 1.43 - GX Edition 0.1.1beta WiiSD";
+char *title = (char*)"Snes9x 1.43 - GX Edition 0.1.1beta";
 extern int CARDSLOT;
 
 #define SOFTRESET_ADR ((volatile u32*)0xCC003024)
@@ -457,8 +458,9 @@ char sdslots[3][10] = {
 
 int slot = 0;
 int device = 1;
+char saveTitle[20] = "Save SRAM Manager";
 
-void savegame() {
+void savegame(int type) { // 0=SRAM, 1=STATE
     int menu = 0;
     short j;
     int redraw = 1;
@@ -470,11 +472,15 @@ void savegame() {
     slot = 2;
 #endif
 
+    sprintf(saveTitle, "Save %s Manager", type ? "STATE" : "SRAM");
+    sprintf(sgmenu[2], "Save %s", type ? "State" : "SRAM");
+    sprintf(sgmenu[3], "Load %s", type ? "State" : "SRAM");
+
     while ( quit == 0 ) {
         if ( redraw ){
             sprintf(sgmenu[0], "SDCard: %s", sdslots[slot]);
             sprintf(sgmenu[1], "Device: %s", (device == 0) ? "MemCard" : "SDCard");
-            DrawMenu((char*)"Save Game Manager", &sgmenu[0], sgmcount, menu);
+            DrawMenu(saveTitle, &sgmenu[0], sgmcount, menu);
         } 
 
         redraw = 1;
@@ -507,10 +513,12 @@ void savegame() {
                     device ^= 1;
                     break;
                 case 2 : 
-                    SaveTheSRAM(1,slot,device); //Save
+                    if (type) NGCFreezeGame(device, slot); // Save State
+                    else SaveTheSRAM(1, slot, device); //Save SRAM
                     break;
                 case 3 :
-                    SaveTheSRAM(0,slot,device);  //Load
+                    if (type) NGCUnfreezeGame(device, slot); // Load State
+                    else SaveTheSRAM(0, slot, device);  // Load SRAM
                     break;
                 case 4 :
                     quit = 1; 
@@ -548,6 +556,63 @@ void savegame() {
 
         if ( menu == sgmcount ) menu = 0;
     }
+}
+
+/****************************************************************************
+ * File Manager Menu
+ ****************************************************************************/
+int managercount = 3;
+char managermenu[3][20] = {
+    {"SRAM Manager"}, {"STATE Manager"},
+    {"Return to previous"}
+};
+
+int SaveMenu () {
+    int quit = 0;
+    int redraw = 1;
+    short j;
+    int menu = 0;
+
+    while (quit == 0) {
+        if ( redraw ) {
+            DrawMenu((char*)"Save File Manager", &managermenu[0], managercount, menu);
+        }
+
+        j = PAD_ButtonsDown(0);
+
+        if ( j & PAD_BUTTON_DOWN ) {
+            menu++;
+            redraw = 1;
+        }
+
+        if ( j & PAD_BUTTON_UP ) {
+            menu--;
+            redraw = 1;
+        }
+
+        if ( j & PAD_BUTTON_A ) {
+            redraw = 1;
+            switch (menu){
+                case 0:
+                    savegame(0);
+                    break;
+                case 1:
+                    savegame(1);
+                    break;
+                case 2:
+                    quit = 1;
+                    break;
+            }
+        }
+
+        if ( j & PAD_BUTTON_B ) quit = 1;
+
+        if ( menu < 0 ) menu = managercount - 1;
+
+        if ( menu == managercount ) menu = 0;
+    }
+
+    return 0;
 }
 
 /****************************************************************************
@@ -782,7 +847,7 @@ char configmenu[10][20] = {
     { "Play Game" }, 
     { "Reset Emulator" },
     { "Load New Game" }, 
-    { "SRAM Manager" }, 
+    { "Save Manager" }, 
     { "ROM Information" }, 
     { "Configure Joypads" },
     { "Emulator Options" }, 
@@ -802,8 +867,13 @@ int ConfigMenu() {
     short j;
     int redraw = 1;
     int quit = 0;
+    int isQuitting = 0;
 
-    void (*PSOReload)() = (void(*)())0x80001800; // 0x90000020 ?
+#ifdef HW_RVL
+    void (*PSOReload)() = (void(*)())0x90000020;
+#else
+    void (*PSOReload)() = (void(*)())0x80001800;
+#endif
 
     copynow = GX_FALSE;
     Settings.Paused =TRUE;
@@ -841,8 +911,8 @@ int ConfigMenu() {
                 case 2 : // Load New Game
                     MediaSelect();
                     break;
-                case 3 : // SRAM Manager
-                    savegame();
+                case 3 : // Save Manager
+                    SaveMenu();
                     break;
                 case 4 : // ROM Information
                     Welcome();
@@ -853,14 +923,9 @@ int ConfigMenu() {
                 case 6 : // Emulator Options
                     EmuMenu();
                     break;
-                /*case 7: // Stop DVD Motor
-                    ShowAction((char*)"Stopping DVD ... Wait");
-                    dvd_motor_off();
-                    WaitPrompt((char*)"DVD Motor Stopped");
-                    break;
-                */
                 case 7 : // PSO Reload
                     PSOReload();
+                    isQuitting = 1;
                     break;
                 case 8 : // Reboot
                     *SOFTRESET_ADR = 0x00000000;
@@ -886,6 +951,9 @@ int ConfigMenu() {
 
     uselessinquiry ();		/*** Stop the DVD from causing clicks while playing ***/
 
-    Settings.Paused = FALSE;
+    if (!isQuitting) {
+        S9xSetSoundMute(FALSE);
+        Settings.Paused = FALSE;
+    }
     return 0;
 }
