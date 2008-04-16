@@ -11,6 +11,7 @@
 #include <soundux.h>
 #include "gcstate.h"
 #include "iplfont.h"
+#include <ogc/ipc.h>
 
 extern unsigned int copynow;
 extern GXRModeObj *vmode;
@@ -55,6 +56,16 @@ extern int CARDSLOT;
 
 #define SOFTRESET_ADR ((volatile u32*)0xCC003024)
 
+void Reboot() {
+#ifdef HW_RVL
+                    // Thanks to hell_hibou
+                    int fd = IOS_Open("/dev/stm/immediate", 0);
+                    IOS_Ioctl(fd, 0x2001, NULL, 0, NULL, 0);
+                    IOS_Close(fd);
+#else
+                    *SOFTRESET_ADR = 0x00000000;
+#endif
+}
 /****************************************************************************
  * Font drawing support
  ****************************************************************************/
@@ -408,8 +419,8 @@ void ConfigPAD() {
 
                 case 5: i = -1;
                         PADCAL += 5;
-                        if ( PADCAL > 90 )
-                            PADCAL = 40;
+                        if ( PADCAL > 70 )
+                            PADCAL = 30;
 
                         sprintf(padmenu[5],"ANALOG CLIP   - %d", PADCAL);
                         break;
@@ -433,6 +444,77 @@ void ConfigPAD() {
 
         if ( j & PAD_BUTTON_B ) quit = 1;
 
+        if ( j & PAD_BUTTON_LEFT ) {
+            i = -1;
+            switch(menu) {
+                case 0: PADCON--;
+                        if ( PADCON < 0 )
+                            PADCON = 0;
+                        for ( i = 0; i < 4; i++ ) {
+                            mpads[i] = conmap[PADCON][i];
+                            padmenu[i+1][16] = PADMap( mpads[i], i );
+                        }
+                        i = -1;
+                        break;
+                case 1: i = 0;
+                        break;
+                case 2: i = 1;
+                        break;
+                case 3: i = 2;
+                        break;
+                case 4: i = 3;
+                        break;
+                case 5: PADCAL -= 5;
+                        if (PADCAL < 30) PADCAL = 30;
+                        break;
+                case 6: allowupdown = 0;
+                        break;
+                default: break;
+            }
+            if ( i >= 0 ) {
+                mpads[i]--;
+                if ( mpads[i] < 0 )
+                    mpads[i] = 0;
+
+                padmenu[i+1][16] = PADMap( mpads[i], i );
+            }
+        }
+        if ( j & PAD_BUTTON_RIGHT ) {
+            i = -1;
+            switch(menu) {
+                case 0: PADCON++;
+                        if ( PADCON > 4 )
+                            PADCON = 4;
+                        for ( i = 0; i < 4; i++ ) {
+                            mpads[i] = conmap[PADCON][i];
+                            padmenu[i+1][16] = PADMap( mpads[i], i );
+                        }
+                        i = -1;
+                        break;
+                case 1: i = 0;
+                        break;
+                case 2: i = 1;
+                        break;
+                case 3: i = 2;
+                        break;
+                case 4: i = 3;
+                        break;
+                case 5: PADCAL += 5;
+                        if (PADCAL > 70) PADCAL = 70;
+                        break;
+                case 6: allowupdown = 1;
+                        break;
+                default: break;
+            }
+            if ( i >= 0 ) {
+                mpads[i]++;
+                if ( mpads[i] > 3 )
+                    mpads[i] = 3;
+
+                padmenu[i+1][16] = PADMap( mpads[i], i );
+            }
+        }
+
         if ( menu < 0 )
             menu = configpadcount - 1;
 
@@ -447,8 +529,8 @@ void ConfigPAD() {
 
 int sgmcount = 5;
 char sgmenu[5][20] = { 
-    { "SDCard: Slot A" }, { "Device: MemCard" },
     { "Save SRAM" }, { "Load SRAM" },	
+    { "Device: MemCard" }, { "SDCard: Slot A" },
     { "Return to previous" } 
 };
 int numsdslots = 3;
@@ -470,17 +552,18 @@ void savegame(int type) { // 0=SRAM, 1=STATE
         numsdslots = 2;
 #if HW_RVL
     slot = 2;
-    device = 0;
+    device = 1;
 #endif
 
     while ( quit == 0 ) {
         if ( redraw ){
             sprintf(saveTitle, "Save %s Manager", type ? "STATE" : "SRAM");
-            sprintf(sgmenu[2], "Save %s", type ? "State" : "SRAM");
-            sprintf(sgmenu[3], "Load %s", type ? "State" : "SRAM");
+            sprintf(sgmenu[0], "Save %s", type ? "State" : "SRAM");
+            sprintf(sgmenu[1], "Load %s", type ? "State" : "SRAM");
 
-            sprintf(sgmenu[0], "SDCard: %s", sdslots[slot]);
-            sprintf(sgmenu[1], "Device: %s", (device == 0) ? "MemCard" : "SDCard");
+            sprintf(sgmenu[2], "Device: %s", device ? "SDCard" : "MemCard");
+            sprintf(sgmenu[3], "%s: %s", device ? "SDCard" : "MemCard",
+                sdslots[slot]);
             DrawMenu(saveTitle, &sgmenu[0], sgmcount, menu);
             redraw = 0;
         } 
@@ -503,24 +586,27 @@ void savegame(int type) { // 0=SRAM, 1=STATE
 
             while( PAD_ButtonsDown(0) & PAD_BUTTON_A ) {};
             switch( menu ) {
-                case 0 :
+                case 0 : 
+                    if (type) NGCFreezeGame(device, slot); // Save State
+                    else SaveTheSRAM(1, slot, device); //Save SRAM
+                    quit = 1;
+                    break;
+                case 1 :
+                    if (type) NGCUnfreezeGame(device, slot); // Load State
+                    else SaveTheSRAM(0, slot, device);  // Load SRAM
+                    quit = 1;
+                    break;
+                case 2 :
                     slot++;
                     if (slot >= numsdslots)
                         slot = 0;
-                    sprintf(sgmenu[0], "SDCard: %s", sdslots[slot]);
                     redraw = 1;
                     break;
-                case 1 : 
+                case 3 : 
                     device ^= 1;
                     redraw = 1;
-                    break;
-                case 2 : 
-                    if (type) NGCFreezeGame(device, slot); // Save State
-                    else SaveTheSRAM(1, slot, device); //Save SRAM
-                    break;
-                case 3 :
-                    if (type) NGCUnfreezeGame(device, slot); // Load State
-                    else SaveTheSRAM(0, slot, device);  // Load SRAM
+                    if (slot > 1)
+                        slot = 1;
                     break;
                 case 4 :
                     quit = 1; 
@@ -529,26 +615,24 @@ void savegame(int type) { // 0=SRAM, 1=STATE
         } 
 
         if (j & PAD_BUTTON_RIGHT) {
-            if (menu == 0) {
+            if (menu == 3) {
                 slot++;
                 if (slot >= numsdslots)
                     slot = numsdslots - 1;
-                sprintf(sgmenu[0], "SDCard: %s", sdslots[slot]);
                 redraw = 1;
-            } else if (menu == 1) {
+            } else if (menu == 2) {
                 device ^= 1;
                 redraw = 1;
             }
         }
 
         if (j & PAD_BUTTON_LEFT) {
-            if (menu == 0) {
+            if (menu == 3) {
                 slot--;
                 if (slot < 0)
                     slot = 0;
-                sprintf(sgmenu[0], "SDCard: %s", sdslots[slot]);
                 redraw = 1;
-            } else if (menu == 1) {
+            } else if (menu == 2) {
                 device ^= 1;
                 redraw = 1;
             }
@@ -779,7 +863,7 @@ int MediaSelect() {
                         choosenSDSlot++;
                         if (choosenSDSlot >= numsdslots)
                             choosenSDSlot = 0;
-                        sprintf(mediamenu[1], "SDCard: %s", sdslots[choosenSDSlot]);
+                        //sprintf(mediamenu[1], "SDCard: %s", sdslots[choosenSDSlot]);
                         redraw = 1;
                         break;
                 case 2: 
@@ -932,7 +1016,7 @@ int ConfigMenu() {
                     isQuitting = 1;
                     break;
                 case 8 : // Reboot
-                    *SOFTRESET_ADR = 0x00000000;
+                    Reboot();
                     break;
                 case 9 : // View Credits
                     credits();

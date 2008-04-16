@@ -15,11 +15,12 @@
 
 #define SNESDIR "snes9x"
 #define SAVEDIR "saves"
+#define SAVEBUFFERSIZE 0x30000
 
 extern void WaitPrompt( char *msg );
 extern void ShowAction( char *msg );
 static u8 SysArea[CARD_WORKAREA] ATTRIBUTE_ALIGN(32);
-unsigned char savebuffer[0x22000] ATTRIBUTE_ALIGN (32);
+unsigned char savebuffer[SAVEBUFFERSIZE] ATTRIBUTE_ALIGN (32);
 card_dir CardDir;
 card_file CardFile;
 card_stat CardStatus;
@@ -34,7 +35,6 @@ extern void S9xSoftReset();
 
 extern void uselessinquiry ();
 
-#define SAVEBUFFERSIZE 65536
 #if 0
 typedef struct _card_block {
     u8 cmd[9];
@@ -240,7 +240,7 @@ int SaveToCard( int mode, int outbytes, int slot )
                     CARD_Unmount(slot);
 
                     sprintf(action, "Loaded %d bytes successfully", size);
-                    WaitPrompt(action);
+                    ShowAction(action);
 
                     filesize = Memory.SRAMSize ? ( 1 << (Memory.SRAMSize + 3)) * 128 : 0;
                     memcpy(&mpads[0], &savebuffer[sizeof(saveicon)+64], 4);
@@ -322,7 +322,6 @@ int SaveSRAMToSD (int slot, unsigned long datasize) {
             int res;
             if (slot == 2) {
 #if HW_RVL
-                FILINFO finfo;
                 ShowAction((char*)"Saving SRAM to Wii SD...");
                 sprintf(filepath, "/%s/%s/%08X.srm", SNESDIR, SAVEDIR, Memory.ROMCRC32);
                 FIL fp;
@@ -345,11 +344,14 @@ int SaveSRAMToSD (int slot, unsigned long datasize) {
                     return 1;
                 }
                 if (written == datasize) {
-                    sprintf(msg, "Saved %d bytes.", written);
-                    WaitPrompt(msg);
+                    sprintf(msg, "Saved %ld bytes.", datasize);
+                    ShowAction(msg);
                     f_close(&fp);
                     return 0;
-                } else WaitPrompt((char*)"Write failed, size mismatch");
+                } else {
+                    sprintf(msg, "Write size mismatch, %d of %ld bytes", written, datasize);
+                    WaitPrompt(msg);
+                }
                 sprintf(msg, "Unable to save %s", filepath);
                 WaitPrompt(msg);
                 return 1;
@@ -367,7 +369,7 @@ int SaveSRAMToSD (int slot, unsigned long datasize) {
                 SDCARD_CloseFile (handle);
 
                 sprintf (filepath, "Saved %ld bytes.", datasize);
-                WaitPrompt (filepath);
+                ShowAction(filepath);
                 return 1;
             }
         } else return 0;
@@ -459,7 +461,7 @@ int LoadSRAMFromSD (int slot) {
     }
     if (offset > 0) {
         sprintf(msg, "Loaded %d bytes successfully", offset);
-        WaitPrompt(msg);
+        ShowAction(msg);
 
         size = Memory.SRAMSize ? ( 1 << (Memory.SRAMSize + 3)) * 128 : 0;
 

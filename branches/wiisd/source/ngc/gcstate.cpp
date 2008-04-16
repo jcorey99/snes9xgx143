@@ -47,8 +47,7 @@
 
 #define SNESDIR "snes9x"
 #define SAVEDIR "saves" 
-#define SAVEBUFFERSIZE 65536
-//#define VERIFBUFFERSIZE 65536
+#define SAVEBUFFERSIZE 0x30000
 #define MEMBUFFER (512 * 1024)
 
 extern unsigned short saveicon[1024];
@@ -58,9 +57,7 @@ extern void NGCFreezeStruct ();
 extern bool8 S9xUnfreezeGame (const char *filename);
 
 static u8 SysArea[CARD_WORKAREA] ATTRIBUTE_ALIGN(32);
-extern unsigned char savebuffer[0x22000] ATTRIBUTE_ALIGN (32);
-//unsigned char savebuffer0[SAVEBUFFERSIZE] ATTRIBUTE_ALIGN (32);
-//unsigned char verifbuffer[VERIFBUFFERSIZE] ATTRIBUTE_ALIGN (32);
+extern unsigned char savebuffer[SAVEBUFFERSIZE] ATTRIBUTE_ALIGN (32);
 
 extern int MountTheCard(int slot);
 extern int CardFileExists(char *filename, int slot);
@@ -354,9 +351,8 @@ int NGCUnFreezeBlock (char *name, uint8 * block, int size){
 int NGCFreezeGame (int device, int slot) {
     char filename[1024];
     sd_file *handle;
-    int len = 0;
-    int wrote = 0;
-    int offset = 0;
+    unsigned int len = 0;
+    u32 offset = 0;
     char msg[100];
     unsigned long outBytes = 0;
     unsigned long zippedsize = 0;
@@ -384,11 +380,11 @@ int NGCFreezeGame (int device, int slot) {
     offset += 64;
 
     /*** Zip and copy in the freeze ***/
-    outBytes = (uLongf) 0x22000;
+    outBytes = (uLongf) SAVEBUFFERSIZE;
     err = compress2((Bytef*)(savebuffer+offset+8), (uLongf*)&outBytes, (const Bytef *)membuffer, (uLongf)bufoffset, Z_BEST_COMPRESSION);
 
     if(err != Z_OK) {
-        sprintf (msg, "zip error %s ",zError(err));
+        sprintf (msg, "Zip error %s ",zError(err));
         WaitPrompt (msg);
         return 0;
     }
@@ -429,7 +425,8 @@ int NGCFreezeGame (int device, int slot) {
             ShowAction((char*)"Saving STATE to Wii SD...");
             sprintf(filename, "/%s/%s/%08X.snz", SNESDIR, SAVEDIR, Memory.ROMCRC32);
             FIL fp;
-            WORD written;
+            WORD written = 0;
+            u32 total_written = 0, datasize = offset;
             int res;
 
             if ((res = f_open(&fp, filename, FA_CREATE_ALWAYS | FA_WRITE)) != FR_OK) {
@@ -437,20 +434,42 @@ int NGCFreezeGame (int device, int slot) {
                 WaitPrompt(msg);
                 return 1;
             }
-            if ((res = f_write(&fp, savebuffer, offset, &written)) != FR_OK) {
+            sprintf(msg, "Writing %d bytes..", datasize);
+            WaitPrompt(msg);
+            // Can only write 64k at a time
+            while (offset > 65000) {
+                if ((res = f_write(&fp, &savebuffer[total_written], 65000, &written)) != FR_OK) {
+                    sprintf(msg, "f_write failed, error %d", res);
+                    WaitPrompt(msg);
+                    f_close(&fp);
+                    return 1;
+                }
+                offset -= written;
+                total_written += written;
+            }
+            // Write last 64k
+            if ((res = f_write(&fp, savebuffer+total_written, offset, &written)) != FR_OK) {
                 sprintf(msg, "f_write failed, error %d", res);
                 WaitPrompt(msg);
                 f_close(&fp);
                 return 1;
             }
-            if (written == offset) {
+            offset -= written;
+            total_written += written;
+            sprintf(msg, "Wrote %d of %d bytes", total_written, datasize);
+            ShowAction(msg);
+            if (total_written == datasize) {
                 sprintf(msg, "Saved %d bytes.", written);
                 ShowAction(msg);
                 f_close(&fp);
                 return 0;
-            } else WaitPrompt((char*)"Write failed, size mismatch");
+            }
+
+            sprintf(msg, "Write size mismatch, %d of %d bytes", written, datasize);
+            WaitPrompt(msg);
             sprintf(msg, "Unable to save %s", filename);
             WaitPrompt(msg);
+            f_close(&fp);
             return 1;
 #endif
         }
@@ -458,7 +477,6 @@ int NGCFreezeGame (int device, int slot) {
         ShowAction((char*)"Saving STATE game in MCARD ..."); 
 
         sprintf (filename, "%s.snz", Memory.ROMName);
-
         ret = SaveBufferToMC ( savebuffer, slot, filename, offset );
 
         if ( ret ) {
@@ -486,7 +504,6 @@ int NGCUnfreezeGame (int device, int slot)
     unsigned long decompressedsize = 0;
     unsigned long outBytes = 0;
     int err = 0;
-    int ret = 0;
 
     bufoffset = 0;
 
@@ -513,14 +530,14 @@ int NGCUnfreezeGame (int device, int slot)
         } else { // WiiSD
 #ifdef HW_RVL
             ShowAction((char*)"Loading STATE file from Wii SD...");    
-            sprintf(filename, "/%s/%s/%08X.srm", SNESDIR, SAVEDIR, Memory.ROMCRC32);
+            sprintf(filename, "/%s/%s/%08X.snz", SNESDIR, SAVEDIR, Memory.ROMCRC32);
             FIL fp;
             WORD bytes_read;
             u32 bytes_read_total;
             FILINFO finfo;
 
-            int res = f_stat(filename, &finfo);
-            if(res != FR_OK) {
+            int res;
+            if ((res=f_stat(filename, &finfo)) != FR_OK) {
                 if (res == FR_NO_FILE) {
                     sprintf(msg, "Unable to find %s.", filename);
                 }
@@ -530,8 +547,7 @@ int NGCUnfreezeGame (int device, int slot)
                 WaitPrompt(msg);
                 return 0;
             }
-            res = f_open(&fp, filename, FA_READ);
-            if (res != FR_OK) {
+            if ((res=f_open(&fp, filename, FA_READ)) != FR_OK) {
                 sprintf(msg, "Failed to open %s, error %d.", filename, res);
                 WaitPrompt(msg);
                 return 0;
@@ -555,7 +571,8 @@ int NGCUnfreezeGame (int device, int slot)
                 f_close(&fp);
                 return 0;
             }
-
+            sprintf(msg, "Read %d of %ld bytes.", bytes_read_total, finfo.fsize);
+            ShowAction(msg);
             f_close(&fp);
             offset = bytes_read_total;
 #endif
@@ -602,7 +619,7 @@ int NGCUnfreezeGame (int device, int slot)
         S9xSetSoundMute (TRUE); //To avoid sound glitch
 
         sprintf (msg, "Loaded %ld bytes successfully", zipsize);
-        WaitPrompt (msg);
+        ShowAction(msg);
     }
 
     //free(savebuffer);
