@@ -814,6 +814,7 @@ char mediamenu[5][20] = {
     { "Stop DVD Motor" },
     { "Return to previous" } 
 };
+extern int haveSDdir;
 
 int MediaSelect() {
     int menu = 0;
@@ -830,6 +831,7 @@ int MediaSelect() {
 #endif
 
     while ( quit == 0 ) {
+        haveSDdir = 0;
         if ( redraw ) {
             sprintf(mediamenu[1], "SDCard: %s", sdslots[choosenSDSlot]);
             DrawMenu((char*)"Load a Game", &mediamenu[0], mediacount, menu);
