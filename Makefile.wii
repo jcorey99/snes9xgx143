@@ -17,8 +17,8 @@ include $(DEVKITPPC)/wii_rules
 #---------------------------------------------------------------------------------
 TARGET		:=	snesgxwi
 BUILD		:=	build
-SOURCES		:=	source/ngc source source/roms
-INCLUDES	:=	include source source/linux
+SOURCES		:=	source/ngc source source/roms source/ngc/wiisd
+INCLUDES	:=	include source source/linux source/ngc/wiisd
 
 #---------------------------------------------------------------------------------
 # options for code generation
@@ -143,4 +143,4 @@ endif
 #---------------------------------------------------------------------------------
 tags:
 	@(cd source; ctags *.cpp *.h \
-	    ngc/*.cpp ngc/*.h )
+	    ngc/*.cpp ngc/*.h ngc/wiisd/*.h ngc/wiisd/*.cpp )

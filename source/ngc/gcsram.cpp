@@ -9,13 +9,18 @@
 #include <snes9x.h>
 #include <memmap.h>
 #include "saveicon.h"
+#ifdef HW_RVL
+#include "tff.h"
+#endif
 
-#define SNESSAVEDIR "snes9x\\saves" 
+#define SNESDIR "snes9x"
+#define SAVEDIR "saves"
+#define SAVEBUFFERSIZE 0x30000
 
 extern void WaitPrompt( char *msg );
 extern void ShowAction( char *msg );
 static u8 SysArea[CARD_WORKAREA] ATTRIBUTE_ALIGN(32);
-unsigned char savebuffer[0x22000] ATTRIBUTE_ALIGN (32);
+unsigned char savebuffer[SAVEBUFFERSIZE] ATTRIBUTE_ALIGN (32);
 card_dir CardDir;
 card_file CardFile;
 card_stat CardStatus;
@@ -29,8 +34,6 @@ extern char padmenu[8][20];
 extern void S9xSoftReset();
 
 extern void uselessinquiry ();
-
-#define SAVEBUFFERSIZE 65536
 
 #if 0
 typedef struct _card_block {
@@ -207,7 +210,7 @@ int SaveToCard( int mode, int outbytes, int slot )
             case 0:	/*** Load a saved SRAM ***/
                 {
                     if ( !CardFileExists(savefilename, slot) )
-                    {	WaitPrompt("No SRAM Save Found");
+                    {	WaitPrompt((char*)"No SRAM Save Found");
                         return 0;
                     }
 
@@ -237,7 +240,7 @@ int SaveToCard( int mode, int outbytes, int slot )
                     CARD_Unmount(slot);
 
                     sprintf(action, "Loaded %d bytes successfully", size);
-                    WaitPrompt(action);
+                    ShowAction(action);
 
                     filesize = Memory.SRAMSize ? ( 1 << (Memory.SRAMSize + 3)) * 128 : 0;
                     memcpy(&mpads[0], &savebuffer[sizeof(saveicon)+64], 4);
@@ -303,65 +306,74 @@ int SaveToCard( int mode, int outbytes, int slot )
                 break;
         }		
     } else {
-        WaitPrompt("Unable to mount memory card!");
+        WaitPrompt((char*)"Unable to mount memory card!");
     }
     return 0;
 }
 
 /****************************************************************************
- * Write savebuffer to SD card file
- ****************************************************************************/
-int SaveBufferToSD (char *filepath, unsigned long datasize)
-{
-    sd_file *handle;
-
-    //SDCARD_Init ();
-
-    if (datasize)
-    {
-        handle = SDCARD_OpenFile (filepath, "wb");
-
-        if (handle <= 0)
-        {
-            char msg[100];
-            sprintf(msg, "Couldn't save %s", filepath);
-            WaitPrompt (msg);
-            return 0;
-        }
-
-        SDCARD_WriteFile (handle, savebuffer, datasize);
-        SDCARD_CloseFile (handle);
-    }
-
-    return datasize;
-}
-
-/****************************************************************************
  * Save SRAM to SD Card
  ****************************************************************************/
-int SaveSRAMToSD (int slot, unsigned long datasize)
-{
-    char filepath[1024];
-    //int datasize;
-    int offset;
-
-    ShowAction ("Saving SRAM to SD...");    
-    sprintf (filepath, "dev%d:\\%s\\%08x.srm", slot, SNESSAVEDIR, Memory.ROMCRC32);
+int SaveSRAMToSD (int slot, unsigned long datasize) {
+    char filepath[1024], msg[1024];
 
     if (Memory.SRAMSize > 0){
-        if ( datasize )
-        {
-            offset = SaveBufferToSD (filepath, datasize);
+        if ( datasize ) {
+            int res;
+            if (slot == 2) {
+#if HW_RVL
+                ShowAction((char*)"Saving SRAM to Wii SD...");
+                sprintf(filepath, "/%s/%s/%08X.srm", SNESDIR, SAVEDIR, Memory.ROMCRC32);
+                FIL fp;
+                WORD written;
 
-            if (offset > 0)
-            {
-                sprintf (filepath, "Saved %d bytes successfully", offset);
-                WaitPrompt (filepath);
+                /*if ((res = f_mount(1, &frontfs)) != FR_OK) {
+                    sprintf(msg, "f_mount failed, error %d", res);
+                    WaitPrompt(msg);
+                    return 1;
+                }*/
+                if ((res = f_open(&fp, filepath, FA_CREATE_ALWAYS | FA_WRITE)) != FR_OK) {
+                    sprintf(msg, "f_open failed, error %d", res);
+                    WaitPrompt(msg);
+                    return 1;
+                }
+                if ((res = f_write(&fp, savebuffer, datasize, &written)) != FR_OK) {
+                    sprintf(msg, "f_write failed, error %d", res);
+                    WaitPrompt(msg);
+                    f_close(&fp);
+                    return 1;
+                }
+                if (written == datasize) {
+                    sprintf(msg, "Saved %ld bytes.", datasize);
+                    ShowAction(msg);
+                    f_close(&fp);
+                    return 0;
+                } else {
+                    sprintf(msg, "Write size mismatch, %d of %ld bytes", written, datasize);
+                    WaitPrompt(msg);
+                }
+                sprintf(msg, "Unable to save %s", filepath);
+                WaitPrompt(msg);
+                return 1;
+#endif
+            } else {
+                ShowAction((char*)"Saving SRAM to SD...");    
+                sprintf (filepath, "dev%d:\\%s\\%s\\%08X.srm", slot, SNESDIR, SAVEDIR, Memory.ROMCRC32);
+                sd_file *handle = SDCARD_OpenFile (filepath, "wb");
+                if (handle <= 0) {
+                    sprintf(msg, "Couldn't save %s", filepath);
+                    WaitPrompt (msg);
+                    return 0;
+                }
+                SDCARD_WriteFile (handle, savebuffer, datasize);
+                SDCARD_CloseFile (handle);
+
+                sprintf (filepath, "Saved %ld bytes.", datasize);
+                ShowAction(filepath);
                 return 1;
             }
-        }else return 0;
-    }
-    else{
+        } else return 0;
+    } else {
         sprintf (filepath, "This ROM file has no battery");
         WaitPrompt (filepath);
         return 0;
@@ -370,55 +382,86 @@ int SaveSRAMToSD (int slot, unsigned long datasize)
 }
 
 /****************************************************************************
- * Load savebuffer from SD card file
- ****************************************************************************/
-int LoadBufferFromSD (char *filepath)
-{
-    sd_file *handle;
-    int offset = 0;
-    int read = 0;
-
-    //SDCARD_Init ();
-
-    handle = SDCARD_OpenFile (filepath, "rb");
-
-    if (handle <= 0)
-    {        
-        char msg[256];
-        sprintf(msg, "Couldn't open %s", filepath);
-        WaitPrompt (msg);       
-        return 0;
-    }
-
-    //memset (savebuffer, 0, 0x22000);
-
-    /*** This is really nice, just load the file and decode it ***/
-    while ((read = SDCARD_ReadFile (handle, &savebuffer[offset], 1024)) > 0){ 
-        offset += read;
-    }    
-    SDCARD_CloseFile (handle);
-
-    return offset;
-}
-
-/****************************************************************************
  * Load SRAM From SD Card
  ****************************************************************************/
-int LoadSRAMFromSD (int slot)
-{
+int LoadSRAMFromSD (int slot) {
     char filepath[1024];
     int offset = 0;
     int size = 0;
+    char msg[1024];
 
-    ShowAction ("Loading SRAM from SD...");    
-    sprintf (filepath, "dev%d:\\%s\\%08x.srm", slot, SNESSAVEDIR, Memory.ROMCRC32);
+    if (slot == 2) {
+#ifdef HW_RVL
+        ShowAction((char*)"Loading SRAM from Wii SD...");    
+        sprintf(filepath, "/%s/%s/%08X.srm", SNESDIR, SAVEDIR, Memory.ROMCRC32);
+        FIL fp;
+        WORD bytes_read;
+        u32 bytes_read_total;
+        FILINFO finfo;
 
-    offset = LoadBufferFromSD (filepath);
+        int res = f_stat(filepath, &finfo);
+        if(res != FR_OK) {
+            if (res == FR_NO_FILE) {
+                sprintf(msg, "Unable to find %s.", filepath);
+            }
+            else {
+                sprintf(msg, "f_stat failed, error %d", res);
+            }
+            WaitPrompt(msg);
+            return 0;
+        }
+        res = f_open(&fp, filepath, FA_READ);
+        if (res != FR_OK) {
+            sprintf(msg, "Failed to open %s, error %d.", filepath, res);
+            WaitPrompt(msg);
+            return 0;
+        }
 
-    if (offset > 0)
-    {
-        sprintf (filepath, "Loaded %d bytes successfully", offset);
-        WaitPrompt(filepath);
+        bytes_read = bytes_read_total = 0;
+        while(bytes_read_total < finfo.fsize) {
+            if (f_read(&fp, &savebuffer[bytes_read_total], 0x200, &bytes_read) != FR_OK) {
+                WaitPrompt((char*)"f_read failed");
+                f_close(&fp);
+                return 0;
+            }
+
+            if(bytes_read == 0)
+                break;
+            bytes_read_total += bytes_read;
+        }
+
+        if (bytes_read_total < finfo.fsize) {
+            WaitPrompt((char*)"read failed");
+            f_close(&fp);
+            return 0;
+        }
+
+        f_close(&fp);
+        offset = bytes_read_total;
+#endif
+    } else {
+        ShowAction((char*)"Loading SRAM from SD...");    
+        sprintf (filepath, "dev%d:\\%s\\%s\\%08x.srm", slot, SNESDIR, SAVEDIR, Memory.ROMCRC32);
+
+        sd_file *handle;
+        int read = 0;
+
+        handle = SDCARD_OpenFile (filepath, "rb");
+        if (handle <= 0) {        
+            sprintf(msg, "Couldn't open %s", filepath);
+            WaitPrompt (msg);       
+            return 0;
+        }
+
+        /*** This is really nice, just load the file and decode it ***/
+        while ((read = SDCARD_ReadFile (handle, &savebuffer[offset], 1024)) > 0){ 
+            offset += read;
+        }    
+        SDCARD_CloseFile (handle);
+    }
+    if (offset > 0) {
+        sprintf(msg, "Loaded %d bytes successfully", offset);
+        ShowAction(msg);
 
         size = Memory.SRAMSize ? ( 1 << (Memory.SRAMSize + 3)) * 128 : 0;
 
@@ -436,17 +479,16 @@ int LoadSRAMFromSD (int slot)
     else return 0;
 }
 
-int SaveSRAM( int mode, int slot, int type) //{ mode : {0=Save, 1=Load}, slot:{0=SlotA, 1=SlotB}, type:{0=MCard, 1=SDCard} }
+//{ mode : {0=Save, 1=Load}, slot:{0=SlotA, 1=SlotB, 2=WiiSD}, type:{0=MCard, 1=SDCard} }
+int SaveTheSRAM( int mode, int slot, int type)
 {
-
     unsigned long size;
     unsigned long outbytes;
     int result = 0;
     outbytes = 0;
     memset(&savebuffer, 0, sizeof(savebuffer));
 
-    if ( mode == 1 ) //1=Save, 0=Load
-    {
+    if ( mode == 1 ) { //1=Save, 0=Load
         /*** Determine size of SRAM ***/
         size = Memory.SRAMSize ? ( 1 << (Memory.SRAMSize + 3)) * 128 : 0;
 
@@ -458,12 +500,11 @@ int SaveSRAM( int mode, int slot, int type) //{ mode : {0=Save, 1=Load}, slot:{0
         if (outbytes == 0)
             return 0;
 
-        if (type == 0){ //Save in MCard else in SDCard
+        if (type == 1) { //Save in MCard else in SDCard
             memcpy(&savebuffer[sizeof(saveicon) + 68], (unsigned char *)Memory.SRAM, outbytes);
             PackInfo();
             result = SaveToCard(1, outbytes, slot);
-        }
-        else{
+        } else {
             memcpy (savebuffer, Memory.SRAM, outbytes);
             result = SaveSRAMToSD (slot, outbytes);
         }
@@ -471,5 +512,7 @@ int SaveSRAM( int mode, int slot, int type) //{ mode : {0=Save, 1=Load}, slot:{0
         return result; 
     } else 
         /*** Now do the job of reading the data in ***/
-        return (type == 0) ? SaveToCard(0, outbytes, slot) : LoadSRAMFromSD (slot); //Load in MCard:SDCard
+        if ( (type == 0) && (slot < 2) )
+            return SaveToCard(0, outbytes, slot); // MemCard
+        else return LoadSRAMFromSD(slot); // SDCard
 }
