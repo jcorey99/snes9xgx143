@@ -51,7 +51,7 @@ int ConfigMenu();
 void SetScreen();
 void ClearScreen();
 
-char *title = (char*)"Snes9x 1.43 - GX Edition 0.1.1beta";
+char *title = (char*)"Snes9x 1.43 - GX Edition 0.1.1";
 extern int CARDSLOT;
 
 #define SOFTRESET_ADR ((volatile u32*)0xCC003024)
@@ -556,6 +556,8 @@ void savegame(int type) { // 0=SRAM, 1=STATE
 #endif
 
     while ( quit == 0 ) {
+        if ( (device == 0) && (slot > 1) ) // MemCard, limit slot
+            slot = 1;
         if ( redraw ){
             sprintf(saveTitle, "Save %s Manager", type ? "STATE" : "SRAM");
             sprintf(sgmenu[0], "Save %s", type ? "State" : "SRAM");
@@ -605,8 +607,6 @@ void savegame(int type) { // 0=SRAM, 1=STATE
                 case 3 : 
                     device ^= 1;
                     redraw = 1;
-                    if (slot > 1)
-                        slot = 1;
                     break;
                 case 4 :
                     quit = 1; 
