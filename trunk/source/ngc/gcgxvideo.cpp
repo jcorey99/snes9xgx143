@@ -436,8 +436,8 @@ void SnesTimer( unsigned int dummy )
  * InitGCVideo
  ****************************************************************************/
 
-void InitGCVideo()
-{
+void InitGCVideo() {
+    extern GXRModeObj TVEurgb60Hz480IntDf;
     /*** Start VIDEO - ALWAYS CALL FIRST IN LIBOGC ***/
     VIDEO_Init();
     PAD_Init();
@@ -449,8 +449,13 @@ void InitGCVideo()
             break;
 
         case VI_PAL:
-            vmode = &TVPal528IntDf;
+            vmode = &TVPal574IntDfScale;
             break;
+#ifdef FORCE_EURGB60
+        default:
+            vmode = &TVEurgb60Hz480IntDf;
+            break;
+#else
         case VI_MPAL:
             vmode = &TVMpal480IntDf;
             break;
@@ -458,6 +463,7 @@ void InitGCVideo()
         default:
             vmode = &TVNtsc480IntDf;
             break;
+#endif
     }
 
 #ifdef FORCE_PAL50
@@ -483,7 +489,6 @@ void InitGCVideo()
 
     copynow = GX_FALSE;
     StartGX();
-
     InitVideoThread();	
 
     /*** Initialise the font for menus ***/
@@ -491,6 +496,5 @@ void InitGCVideo()
 
     /*** Initialise the DVD subsystem ***/
     DVD_Init();
-
 }
 
