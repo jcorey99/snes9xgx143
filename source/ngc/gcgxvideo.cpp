@@ -133,6 +133,7 @@ void StartGX()
     GX_SetVtxAttrFmt(GX_VTXFMT0,GX_VA_TEX0,GX_TEX_ST,GX_F32,0);
     GX_SetVtxDesc(GX_VA_POS,GX_DIRECT);
     GX_SetVtxDesc(GX_VA_TEX0,GX_DIRECT);
+    GX_Flush(); // Thanks to eke-eke
 
     S9xSetRenderPixelFormat(RGB565); 
 }
