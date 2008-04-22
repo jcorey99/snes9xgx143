@@ -46,7 +46,7 @@ static void AudioSwitchBuffers()
     uint32 *dst;
     int count;
 
-    //AUDIO_StopDMA();
+    AUDIO_StopDMA();
     AUDIO_InitDMA((u32)SoundBuffer[whichab], AUDIOBUFFER);
     DCFlushRange(&SoundBuffer[whichab], AUDIOBUFFER);
     AUDIO_StartDMA();

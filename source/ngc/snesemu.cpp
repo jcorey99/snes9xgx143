@@ -50,7 +50,7 @@ extern void GenerateSound();
 extern void SetupSound ();
 extern void AudioGo();
 extern int snesromsize;
-extern int ConfigMenu();
+extern int MainMenu();
 extern void unpackanim();
 static unsigned char *inquiry=(unsigned char *)0x80000004;
 extern void dvd_inquiry();
@@ -304,7 +304,7 @@ void Emulate()
             /*** This is the real emulator loop ***/
             S9xMainLoop();
             if ( ConfigRequested ) {
-                ConfigMenu();
+                MainMenu();
                 ConfigRequested = 0;
             }
             S9xSetSoundMute(FALSE);
@@ -366,7 +366,7 @@ int main() {
 
     Memory.LoadSRAM( "DVD" );
 
-    ConfigMenu();
+    MainMenu();
 
     Emulate();
 
