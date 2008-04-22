@@ -16,6 +16,7 @@
 #define MENU_ON                 "ON"
 #define MENU_OFF                "OFF"
 #define MENU_EXIT               "Volver atras"
+#define MENU_PRESS_A            "Pulsa A para Continuar"
 
 // Main menu
 #define MENU_MAIN_PLAY          "Jugar"
@@ -27,10 +28,10 @@
 #define MENU_MAIN_OPTIONS       "Opciones Emulador"
 #ifdef HW_RVL
 #define MENU_MAIN_RELOAD        "Reiniciar Cargador"
-#define MENU_MAIN_REBOOT        "Reinciar Wii"
+#define MENU_MAIN_REBOOT        "Reiniciar Wii"
 #else
 #define MENU_MAIN_RELOAD        "PSO Reload"
-#define MENU_MAIN_REBOOT        "Reboot Gamecube"
+#define MENU_MAIN_REBOOT        "Reiniciar Gamecube"
 #endif
 #define MENU_MAIN_CREDITS       "Ver Creditos"
 
@@ -38,9 +39,9 @@
 #define MENU_MEDIA_TITLE        "Abrir Un Juego"
 #define MENU_MEDIA_SDCARD       "Abrir desde SDCard"
 #define MENU_MEDIA_DVD          "Abrir desde DVD"
-#define MENU_MEDIA_STOPDVD      "Stop DVD Motor"
-#define MENU_MEDIA_STOPPING     "Stopping DVD ... Wait"
-#define MENU_MEDIA_STOPPED      "DVD Motor Stopped"
+#define MENU_MEDIA_STOPDVD      "Parar Motor DVD"
+#define MENU_MEDIA_STOPPING     "Parando DVD ... Espere"
+#define MENU_MEDIA_STOPPED      "Motor DVD Parado"
 
 // File menu
 #define MENU_FILE_TITLE         "Guardar Partidas"
@@ -105,7 +106,8 @@
 // Some general menu strings
 #define MENU_ON                 "ON"
 #define MENU_OFF                "OFF"
-#define MENU_EXIT               "Return to previous"
+#define MENU_EXIT               "Return to Previous"
+#define MENU_PRESS_A            "Press A to Continue"
 
 // Main menu
 #define MENU_MAIN_PLAY          "Play Game"
