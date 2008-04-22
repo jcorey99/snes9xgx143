@@ -25,12 +25,10 @@ card_dir CardDir;
 card_file CardFile;
 card_stat CardStatus;
 
-int CARDSLOT = CARD_SLOTA;
 int ISACTIVE[2] = { 0, 0 };
 char saveinfo[4];
-extern char mpads[4];
+extern u8 mpads[4];
 extern char PADMap( int padvalue, int padnum );
-extern char padmenu[8][20];
 extern void S9xSoftReset();
 
 extern void uselessinquiry ();
@@ -89,25 +87,28 @@ int MountTheCard(int slot)
 {
     int tries = 0;
     int CardError;
-    while ( tries < 10 )
-    {
+    ShowAction((char*)"MtC 1");
+    while ( tries < 10 ) {
         *(unsigned long*)(0xcc006800) |= 1<<13;	/*** Disable Encryption ***/
         uselessinquiry();	
         VIDEO_WaitVSync();
+    ShowAction((char*)"MtC 2");
         CardError = CARD_Mount(slot, SysArea, NULL);	/*** Don't need or want a callback ***/	
+    ShowAction((char*)"MtC 3");
         if ( CardError == 0 )
             return 0;
         else {
-            //if ( ISACTIVE[CARDSLOT] )
-            if ( ISACTIVE[slot] )
-            {
+    ShowAction((char*)"MtC 3");
+            if ( ISACTIVE[slot] ) {
                 EXI_ProbeReset();
                 ISACTIVE[slot] = 0;
             }
         }
+    ShowAction((char*)"MtC 4");
         tries++;
     }
 
+    ShowAction((char*)"MtC 5");
     return 1;
 }
 
@@ -164,8 +165,6 @@ void UnpackInfo()
         saveinfo[i] &= 0xf;
 
         if ( saveinfo[i] > 3 ) saveinfo[i] = 0;
-
-        //padmenu[i+1][16] = PADMap( saveinfo[i], i);
     }		
 }
 
@@ -196,12 +195,15 @@ int SaveToCard( int mode, int outbytes, int slot )
     //CARD_Init("SNES", "00", FALSE);
     CARD_Init("SNES", "00");
 
+    ShowAction((char*)"StC 1");
     /*** Mount the card ***/
     CardError = MountTheCard(slot);
 
+    ShowAction((char*)"StC 2");
     /*** Suspected error in libogc. A return of 1 means the card is not mounted completely ***/	
     if ( CardError == 0 )
     {
+    ShowAction((char*)"StC 3");
         /*** Get sector size ***/
         CardError = CARD_GetSectorSize(slot, &SectorSize);		
 
@@ -209,22 +211,26 @@ int SaveToCard( int mode, int outbytes, int slot )
         {
             case 0:	/*** Load a saved SRAM ***/
                 {
+    ShowAction((char*)"StC 4");
                     if ( !CardFileExists(savefilename, slot) )
                     {	WaitPrompt((char*)"No SRAM Save Found");
                         return 0;
                     }
 
+    ShowAction((char*)"StC 5");
                     memset(&CardFile, 0, sizeof(CardFile));
                     CardError = CARD_Open(slot, savefilename, &CardFile);
 
                     blocks = filesize = CardFile.len;
 
+    ShowAction((char*)"StC 6");
                     if ( blocks < SectorSize )
                         blocks = SectorSize;
 
                     if ( blocks % SectorSize )
                         blocks++;
 
+    ShowAction((char*)"StC 7");
                     /*** Just read the file back in ***/
                     sbo = 0;
                     int size = blocks;

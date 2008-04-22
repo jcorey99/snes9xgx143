@@ -30,6 +30,10 @@
 #define PAGESIZE 15
 extern int PADCAL;
 
+#define SNESDIR "snes9x"
+#define SAVEDIR "saves"
+#define ROMSDIR "roms"
+
 /* SDCARD reading & browsing */
 int UseSDCARD = 0;
 int UseFrontSDCARD = 0;
@@ -71,7 +75,7 @@ extern void mdelay(unsigned int us);
 extern int IsXenoGCImage( char *buffer );
 void GetSDInfo();
 
-extern int choosenSDSlot;
+extern int ChosenSlot;
 extern unsigned char isWii;
 int sdslot = 0;
 /****************************************************************************
@@ -525,7 +529,7 @@ int updateSDdirname()
 
         /* handles root name */
         if (strcmp(rootSDdir, sdslot ? "dev1:":"dev0:") == 0)
-            sprintf(rootSDdir,"dev%d:\\snes9x\\..", sdslot); 
+            sprintf(rootSDdir,"dev%d:\\%s\\..", sdslot, SNESDIR); 
 
         return 1;
     } else {
@@ -533,9 +537,8 @@ int updateSDdirname()
         if ((strlen(rootSDdir)+1+strlen(filelist[selection].filename)) < SDCARD_MAX_PATH_LEN) 
         {
             /* handles root name */
-            //sprintf(tmpCompare, "dev%d:\\snes9x\\..",choosenSDSlot);
-            //if (strcmp(rootSDdir, tmpCompare) == 0) sprintf(rootSDdir,"dev%d:",choosenSDSlot);
-            if (strcmp(rootSDdir, sdslot ? "dev1:\\snes9x\\.." : "dev0:\\snes9x\\..") == 0) sprintf(rootSDdir,"dev%d:",sdslot);
+            sprintf(tmpCompare, "dev%d:\\%s\\..", sdslot, SNESDIR);
+            if (strcmp(rootSDdir, tmpCompare) == 0) sprintf(rootSDdir,"dev%d:",sdslot);
 
             /* update current directory name */
             sprintf(rootSDdir, "%s\\%s",rootSDdir, filelist[selection].filename);
@@ -990,7 +993,7 @@ int OpenFrontSD () {
         }
 
         /* Reset SDCARD root directory */
-        sprintf(rootWiiSDdir,"/snes9x/roms");
+        sprintf(rootWiiSDdir,"/%s/%s", SNESDIR, ROMSDIR);
 
         /* Parse initial root directory and get entries list */
         ShowAction((char *)"Reading Directory ...");
@@ -1023,15 +1026,15 @@ int OpenSD () {
     UseFrontSDCARD = 0;
     char msg[128];
 
-    if (choosenSDSlot != sdslot) haveSDdir = 0;
+    if (ChosenSlot != sdslot) haveSDdir = 0;
 
     if (haveSDdir == 0) {
         /* don't mess with DVD entries */
         havedir = 0;
 
         /* Reset SDCARD root directory */
-        sprintf(rootSDdir,"dev%d:\\snes9x\\roms",choosenSDSlot);
-        sdslot = choosenSDSlot;
+        sprintf(rootSDdir,"dev%d:\\%s\\%s",ChosenSlot, SNESDIR, ROMSDIR);
+        sdslot = ChosenSlot;
 
         /* Parse initial root directory and get entries list */
         ShowAction((char*)"Reading Directory ...");
@@ -1045,7 +1048,7 @@ int OpenSD () {
             haveSDdir = 1;
         } else {
             /* no entries found */
-            sprintf (msg, "Error reading dev%d:\\snes9x\\roms", choosenSDSlot);
+            sprintf (msg, "Error reading %s", rootSDdir);
             WaitPrompt (msg);
             return 0;
         }
