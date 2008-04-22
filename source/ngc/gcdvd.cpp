@@ -461,7 +461,6 @@ int updateWiiSDdirname() {
     int size=0;
     char *test;
     char temp[1024];
-    char tmpCompare[1024];
 
     /* current directory doesn't change */
     if (strcmp(filelist[selection].filename,".") == 0)
@@ -485,11 +484,6 @@ int updateWiiSDdirname() {
     } else {
         /* test new directory namelength */
         if ((strlen(rootWiiSDdir)+1+strlen(filelist[selection].filename)) < SDCARD_MAX_PATH_LEN) {
-            /* handles root name */
-            //sprintf(tmpCompare, "/snes9x/..");
-            //if (strcmp(rootWiiSDdir, tmpCompare) == 0) sprintf(rootWiiSDdir,"/");
-            //if (strcmp(rootSDdir,"dev0:\\snes9x\\..") == 0) sprintf(rootSDdir,"dev0:");
-
             /* update current directory name */
             sprintf(rootWiiSDdir, "%s/%s",rootWiiSDdir, filelist[selection].filename);
             return 1;
@@ -537,8 +531,8 @@ int updateSDdirname()
         if ((strlen(rootSDdir)+1+strlen(filelist[selection].filename)) < SDCARD_MAX_PATH_LEN) 
         {
             /* handles root name */
-            sprintf(tmpCompare, "dev%d:\\%s\\..", sdslot, SNESDIR);
-            if (strcmp(rootSDdir, tmpCompare) == 0) sprintf(rootSDdir,"dev%d:",sdslot);
+            sprintf(temp, "dev%d:\\%s\\..", sdslot, SNESDIR);
+            if (strcmp(rootSDdir, temp) == 0) sprintf(rootSDdir,"dev%d:",sdslot);
 
             /* update current directory name */
             sprintf(rootSDdir, "%s\\%s",rootSDdir, filelist[selection].filename);
