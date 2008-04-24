@@ -19,6 +19,9 @@ TARGET		:=	snesgxgc
 BUILD		:=	build
 SOURCES		:=	source/ngc source source/roms
 INCLUDES	:=	include source source/linux
+# Specify language in all capitals
+# Supported languages: ENGLISH, SPANISH, GERMAN
+LANG		:=	ENGLISH
 
 #---------------------------------------------------------------------------------
 # options for code generation
@@ -29,7 +32,7 @@ CFLAGS  = -g -O2 -Wall $(MACHDEP) $(INCLUDE) -fomit-frame-pointer \
 	  -DNOASM -DNGC -DNOASM -DPIXEL_FORMAT=RGB565 -DSPC700_C \
 	  -DEXECUTE_SUPERFX_PER_LINE \
 	  -fno-exceptions -Wno-unused-parameter -pipe \
-	  -DDETECT_NASTY_FX_INTERLEAVE -DSDD1_DECOMP
+	  -DDETECT_NASTY_FX_INTERLEAVE -DSDD1_DECOMP -DINTL_$(LANG)
 CXXFLAGS	=	$(CFLAGS)
 
 LDFLAGS	=	-g $(MACHDEP) -Wl,-Map,$(notdir $@).map -Wl,--cref
