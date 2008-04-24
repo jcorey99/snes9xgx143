@@ -532,6 +532,7 @@ void SaveMenu(int SaveType) { // 0=SRAM, 1=STATE
     int quit = 0;
     short j;
 
+    showspinner = 1;
     if (!isWii)
         SdSlotCount = 2;
 #ifdef HW_RVL
