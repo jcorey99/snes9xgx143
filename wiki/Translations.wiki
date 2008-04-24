@@ -3,7 +3,7 @@
 
 = Translating text =
   # Copy one of the existing language files in source/ngc/intl/ to the target
-  language.
+language.
   # Edit the file, replacing the strings with your translated text.
   # Go to the _Issues_ tab, and submit a _New Issue_ (requires a Google account)
   # Enter a *Summary* and *Description*.
@@ -14,7 +14,7 @@
   # Open _Makefile.wii_ or _Makefile.gc_ in an editor.
   # Search for the text *LANG*.  It should get you around line 24.
   # Set the LANG variable to one of the supported languages listed, keeping
-  it in all capital letters.
+it in all capital letters.
   # Save and exit your editor.
   # Compile the sources as usual.
 
