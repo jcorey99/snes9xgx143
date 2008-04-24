@@ -2,8 +2,8 @@
 #labels Featured
 
 = Requirements =
- * SD Gecko with SD Card (2GB max size)
  * 1-4 Gamecube Controller(s)
+ * SD Card (2GB max size) for either the WiiSD or an SD Gecko
  * Gamecube Memory Card (optional)
 ----
 = Preparation =
