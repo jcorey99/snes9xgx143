@@ -20,7 +20,7 @@ BUILD		:=	build
 SOURCES		:=	source/ngc source source/roms
 INCLUDES	:=	include source source/linux
 # Specify language in all capitals
-# Supported languages: ENGLISH, SPANISH, GERMAN
+# Supported languages: ENGLISH, SPANISH, GERMAN, DUTCH
 LANG		:=	ENGLISH
 
 #---------------------------------------------------------------------------------
