@@ -1,0 +1,13 @@
+﻿#summary Instructions for submitting translations for other languages
+#labels Featured
+
+# Copy one of the existing language files in source/ngc/intl/ to the target
+language.
+# Edit the file, replacing the strings with your translated text.
+# Go to the _Issues_ tab, and submit a _New Issue_ (requires a Google account)
+# Enter a *Summary* and *Description*.
+# Click the _Attach a file_ link and attach your translated header file.
+# Click _Submit Issue_ and wait.
+
+The End.
+Thank you.
