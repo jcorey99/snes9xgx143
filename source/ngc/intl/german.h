@@ -43,7 +43,7 @@
 #define MENU_SAVE_TITLE         "Manager"
 #define MENU_SAVE_SAVE          "Speichern"
 #define MENU_SAVE_LOAD          "Laden"
-#define MENU_SAVE_DEVICE        "Gerät"
+#define MENU_SAVE_DEVICE        "Gerat"
 
 // Rom Information
 #define MENU_INFO_ROM           "ROM"
