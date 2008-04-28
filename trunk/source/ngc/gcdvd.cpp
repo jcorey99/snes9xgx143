@@ -673,7 +673,7 @@ void ShowFiles( int offset, int selection ) {
         else
             dir[0] = 0;
 
-        writex(CentreTextPosition(dir), 32, GetTextWidth(rootWiiSDdir), font_height, rootWiiSDdir, blit_lookup);
+        writex(CentreTextPosition(dir), 32, GetTextWidth(dir), font_height, dir, blit_lookup);
         while (GetTextWidth(text) > 620)
             text[strlen(text)-2] = 0;
         if ( j == ( selection - offset ) )
@@ -685,7 +685,6 @@ void ShowFiles( int offset, int selection ) {
     }
 
     SetScreen();
-
 }
 
 /****************************************************************************
@@ -702,9 +701,7 @@ void FileSelector() {
     int haverom = 0;
     int redraw = 1;
 
-    ShowAction((char*)"FileSelector()");
     showspinner = 0;
-
     while ( haverom == 0 ) {
         if ( redraw ) ShowFiles( offset, selection );
 

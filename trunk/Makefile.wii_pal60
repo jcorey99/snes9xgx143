@@ -21,7 +21,7 @@ SOURCES		:=	source/ngc source source/roms source/ngc/wiisd
 INCLUDES	:=	include source source/linux source/ngc/wiisd
 # Specify language in all capitals
 # Supported languages: ENGLISH, SPANISH, GERMAN, DUTCH
-LANG		:=	English
+LANG		:=	ENGLISH
 
 #---------------------------------------------------------------------------------
 # options for code generation
