@@ -51,13 +51,13 @@ void ClearScreen();
 
 void Reboot() {
 #ifdef HW_RVL
-                    // Thanks to hell_hibou
-                    int fd = IOS_Open("/dev/stm/immediate", 0);
-                    IOS_Ioctl(fd, 0x2001, NULL, 0, NULL, 0);
-                    IOS_Close(fd);
+    // Thanks to hell_hibou
+    int fd = IOS_Open("/dev/stm/immediate", 0);
+    IOS_Ioctl(fd, 0x2001, NULL, 0, NULL, 0);
+    IOS_Close(fd);
 #else
 #define SOFTRESET_ADR ((volatile u32*)0xCC003024)
-                    *SOFTRESET_ADR = 0x00000000;
+    *SOFTRESET_ADR = 0x00000000;
 #endif
 }
 /****************************************************************************
@@ -584,13 +584,11 @@ void SaveMenu(int SaveType) { // 0=SRAM, 1=STATE
                     break;
                 case SAVE_DEVICE:
                     ChosenDevice ^= 1;
-                    redraw = 1;
                     break;
                 case SAVE_SLOT:
                     ChosenSlot++;
                     if (ChosenSlot >= SdSlotCount)
                         ChosenSlot = 0;
-                    redraw = 1;
                     break;
                 case SAVE_EXIT:
                     quit = 1; 
