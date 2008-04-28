@@ -19,6 +19,9 @@ TARGET		:=	snesgxwi_pal60
 BUILD		:=	build
 SOURCES		:=	source/ngc source source/roms source/ngc/wiisd
 INCLUDES	:=	include source source/linux source/ngc/wiisd
+# Specify language in all capitals
+# Supported languages: ENGLISH, SPANISH, GERMAN, DUTCH
+LANG		:=	English
 
 #---------------------------------------------------------------------------------
 # options for code generation
@@ -29,7 +32,8 @@ CFLAGS  = -g -O2 -Wall $(MACHDEP) $(INCLUDE) -fomit-frame-pointer \
 	  -DNOASM -DNGC -DNOASM -DPIXEL_FORMAT=RGB565 -DSPC700_C \
 	  -DEXECUTE_SUPERFX_PER_LINE \
 	  -fno-exceptions -Wno-unused-parameter -pipe \
-	  -DDETECT_NASTY_FX_INTERLEAVE -DSDD1_DECOMP -DFORCE_EURGB60
+	  -DDETECT_NASTY_FX_INTERLEAVE -DSDD1_DECOMP -DFORCE_EURGB60 \
+	  -DINTL_$(LANG)
 CXXFLAGS	=	$(CFLAGS)
 
 LDFLAGS	=	-g $(MACHDEP) -Wl,-Map,$(notdir $@).map -Wl,--cref
