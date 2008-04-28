@@ -435,7 +435,7 @@ int NGCFreezeGame (int device, int slot) {
                 return 1;
             }
             sprintf(msg, "Writing %d bytes..", datasize);
-            ShowPrompt(msg);
+            WaitPrompt(msg);
             // Can only write 64k at a time
             while (offset > 65000) {
                 if ((res = f_write(&fp, &savebuffer[total_written], 65000, &written)) != FR_OK) {
