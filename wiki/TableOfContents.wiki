@@ -1,4 +1,5 @@
+﻿#summary Table of Contents
  *[Instructions Instructions]
- *[Menus Menus]
- *[Translations Translations]
+ *[Menus Menu Structure]
+ *[Translations Translating Text]
 

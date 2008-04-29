@@ -5,21 +5,29 @@
  # Play Game
  # Reset Emulator
  # Load New Game
+   # Load from SDCard
+   # <Device>: <Slot>
    # Load from DVD
-   # Load from SDCARD
- # SRAM Manager
-   # Use: SLOT A/B
-   # Device: MCARD/SDCARD
-   # Save SRAM
-   # Load SRAM
+   # Stop DVD Motor
+ # Save Manager
+   # SRAM Manager
+     # Save SRAM
+	 # Load SRAM
+	 # Device: <Device>
+	 # <Device>: <Slot>
+   # STATE Manager
+     # Save State
+	 # Load State
+	 # Device: <Device>
+	 # <Device>: <Slot>
  # ROM Information
  # Configure Joypads
    # SETUP A/B/C/D/E
-   # SNES BUTTON A - X
-   # SNES BUTTON B - A
-   # SNES BUTTON X - B
+   # SNES BUTTON A - A
+   # SNES BUTTON B - B
+   # SNES BUTTON X - X
    # SNES BUTTON Y - Y
-   # ANALOG CLIP - 70
+   # ANALOG CLIP - 40
    # ALLOW U+D / L+R OFF
  # Emulator Options
    # Sound Echo ON
@@ -27,9 +35,9 @@
    # Transparency ON
    # FPS Display OFF
    # Interpolate ON
-   # Timer VBLANK
+   # Timer VBlank
    # Multitap OFF
- # Stop DVD Motor
- # PSO/SD Reload
+ # PSO/TP Reload
  # Reboot Gamecube/Wii
  # View Credits
+

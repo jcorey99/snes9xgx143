@@ -3,7 +3,7 @@
 
 = Requirements =
  * 1-4 Gamecube Controller(s)
- * SD Card (2GB max size) for either the WiiSD or an SD Gecko
+ * SD Card (2GB max size) used in either the WiiSD or an SD Gecko
  * Gamecube Memory Card (optional)
 ----
 = Preparation =
@@ -11,6 +11,9 @@
  * Create the directory *snes9x* at the root of the SD card
  * Within that directory, create the directories *roms* and *saves*
  * Place game roms in the /snes9x/roms directory.  There is a limit of 1000(_TODO verify number_) files within each subdirectory.
+== DVD ==
+*The DVD is only compatible when run in Gamecube mode*
+ * Todo...
 ----
 = Launching the Emulator =
 == Gamecube ==
@@ -27,17 +30,4 @@
   * _Optional_ Select *ROM Information* from the Snes9xGX main menu to verify the ROM loaded properly.
   * _Optional_ (_TODO_) Load SRAM data.
  * Select *Play Game*
- * The default controller setup is below.  To change the default setup, select *Emulator Options* from the main menu.
-|| SNES Key || Gamecube Key ||
-|| A || X ||
-|| B || A ||
-|| X || B ||
-|| Y || Y ||
-|| L || L ||
-|| R || R ||
-|| Start || Start ||
-|| Select || Z ||
 ----
-= Blah =
-_TODO_ The rest to be filled in later.
-
