@@ -186,7 +186,7 @@ void RomInfo() {
         ClearScreen();
 
         /*** Title ***/
-        write_font(CentreTextPosition((char*)MENU_CREDITS_TITLE) , ( 480 - ( 16 * font_height )) >> 1 , (char*)MENU_CREDITS_TITLE);
+        write_font(CentreTextPosition((char*)MENU_SNES9X_TITLE) , ( 480 - ( 16 * font_height )) >> 1 , (char*)MENU_SNES9X_TITLE);
 
         /*** Print titles ***/
         for ( i = 0; i < 10; i++ )
@@ -954,7 +954,7 @@ int MainMenu() {
     while ( quit == 0 ) {
         redraw = 1;
         if ( redraw )
-            DrawMenu((char*)MENU_CREDITS_TITLE, MainMenu, MainMenuCount, ChosenMenu);
+            DrawMenu((char*)MENU_SNES9X_TITLE, MainMenu, MainMenuCount, ChosenMenu);
 
         j = PAD_ButtonsDown(0);
 

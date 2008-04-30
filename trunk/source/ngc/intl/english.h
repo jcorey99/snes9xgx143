@@ -79,7 +79,7 @@
 #define MENU_EMU_MULTITAP       "MultiTap"
 
 // Credits menu
-#define MENU_CREDITS_TITLE      "Snes9x 1.43 - GX Edition v0.1.2beta1"
+#define MENU_CREDITS_TITLE      MENU_SNES9X_TITLE
 #define MENU_CREDITS_GCPORT     "GC Port"
 #define MENU_CREDITS_GXINFO     "GX Info"
 #define MENU_CREDITS_FONT       "Font"
