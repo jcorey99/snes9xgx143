@@ -4,6 +4,7 @@
  * Based on MSDOS VESA Renderer
  *
  * softdev - November 2005
+ * Askot - May 2008
  ****************************************************************************/
 
 #include <gccore.h>
@@ -81,8 +82,7 @@ const char *S9xGetFilenameInc (const char *e)
     return (char *)"NONE";
 }
 
-extern unsigned int FrameTimer;		/*** FrameTimer
-                                          Incremented by libogc VBL ***/
+extern unsigned int FrameTimer;		/*** FrameTimer Incremented by libogc VBL ***/
 
 int timerstyle = 0;
 unsigned int timediffallowed;
@@ -106,7 +106,8 @@ void S9xSyncSpeed()
             IPPU.RenderThisFrame = TRUE;
             IPPU.SkippedFrames = 0;
         }
-    } else {
+    } 
+    else {
         mftb(&now);
 
         if ( tb_diff_usec(&now, &prev) > timediffallowed )
@@ -139,7 +140,7 @@ void S9xSyncSpeed()
     FrameTimer--;
 }
 
-bool8  S9xInitUpdate (void)
+bool8 S9xInitUpdate (void)
 {
     memset(GFX.Screen, 0, IMAGE_WIDTH * IMAGE_HEIGHT * 2);
     return TRUE;
@@ -163,8 +164,6 @@ bool8 S9xDeinitUpdate(int Width, int Height, bool8 sixteen_bit)
  ****************************************************************************/
 void S9xAutoSaveSRAM ()
 {
-    /*if (Memory.SRAMSize > 0){
-      }*/
     return;
 }
 
@@ -181,7 +180,6 @@ const char *S9xGetFilename (const char *e)
  ****************************************************************************/
 void S9xLoadSDD1Data ()
 {
-
     Memory.FreeSDD1Data ();
 
     Settings.SDD1Pack=FALSE;
@@ -193,7 +191,6 @@ void S9xLoadSDD1Data ()
         Settings.SDD1Pack = TRUE;
 
     return;
-
 }
 
 /****************************************************************************
@@ -207,6 +204,64 @@ unsigned int S9xReadJoypad (int which1)
         return 0x80000000 | GetJoys( which1 );
     else
         return (which1 < 2) ? 0x80000000 | GetJoys( which1 ) : 0 ;
+}
+
+/****************************************************************************
+ * ReadSuperScope
+ *
+ * Emulate SuperScope through Joypads / ¿WiiMote?
+ ****************************************************************************/
+ // Fire / Action / Pause / Turbo
+unsigned short gcscopemap[] = {
+    PAD_BUTTON_B, PAD_BUTTON_A, PAD_BUTTON_START, PAD_TRIGGER_Z};
+
+unsigned int snesscopemap[] = {
+    SNES_B_MASK, SNES_A_MASK, SNES_START_MASK, SNES_SELECT_MASK};
+
+int gcScreenX = 0;
+int gcScreenY = 0;
+int SCOPEPADCAL = 20;
+
+bool8 S9xReadSuperScopePosition (int &x, int &y, uint32 &buttons)
+{
+    if (Settings.SuperScope){
+	
+	    signed char padX = PAD_StickX(0);
+        signed char padY = PAD_StickY(0);
+       
+        if (padX > SCOPEPADCAL){
+            gcScreenX +=4;
+            if (gcScreenX > 256) gcScreenX = 256;
+        }
+        if (padX < -SCOPEPADCAL){
+            gcScreenX -=4;
+            if (gcScreenX < 0) gcScreenX = 0;
+        }
+       
+        if (padY < -SCOPEPADCAL){
+			gcScreenY +=4;
+            if (gcScreenY > 224) gcScreenY = 224;
+        }
+        if (padY > SCOPEPADCAL){
+			gcScreenY -=4;
+            if (gcScreenY < 0) gcScreenY = 0;            
+        }       
+       
+        x = gcScreenX;
+        y = gcScreenY;
+
+        unsigned short p = PAD_ButtonsHeld(0);
+
+        for (int i = 0; i < 4; i++ ) {
+            if ( p & gcscopemap[i] )           
+                buttons |= snesscopemap[i];           
+        }
+
+        return (TRUE);
+    }
+    else{
+        return (FALSE);
+    }
 }
 
 /****************************************************************************
@@ -283,7 +338,6 @@ void configDefaults()
  ****************************************************************************/
 void Emulate()
 {
-
     AudioGo();
     FrameTimer = 0;
 
@@ -318,7 +372,6 @@ void Emulate()
  ****************************************************************************/
 int main()
 {
-
     unsigned int save_flags;
 
     InitGCVideo();

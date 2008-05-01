@@ -8,14 +8,14 @@
 
 #include <gccore.h>
 #include <snes9x.h>
+#include <soundux.h>
+#include "display.h"
+#include "memmap.h"
 #include "gcgxvideo.h"
 
 PADStatus gcjoypads[4];
 extern int ConfigRequested;
 
-/*** NOTE: In these maps, left and right triggers are reversed 
-  This is an error in libogc pad.h, so I've left it in
-  to save devs having to alter their copies ***/
 unsigned short gcpadmap[] = { PAD_BUTTON_X, PAD_BUTTON_A, PAD_BUTTON_B, PAD_BUTTON_Y,
     PAD_BUTTON_UP, PAD_BUTTON_DOWN, PAD_BUTTON_LEFT, PAD_BUTTON_RIGHT,
     PAD_BUTTON_START, PAD_TRIGGER_Z, PAD_TRIGGER_R, PAD_TRIGGER_L };
@@ -23,6 +23,11 @@ unsigned short gcpadmap[] = { PAD_BUTTON_X, PAD_BUTTON_A, PAD_BUTTON_B, PAD_BUTT
 unsigned int snespadmap[] = { SNES_A_MASK, SNES_B_MASK, SNES_X_MASK, SNES_Y_MASK,
     SNES_UP_MASK, SNES_DOWN_MASK, SNES_LEFT_MASK, SNES_RIGHT_MASK,
     SNES_START_MASK, SNES_SELECT_MASK, SNES_TR_MASK, SNES_TL_MASK };
+
+extern int SaveSRAM(int mode, int slot, int type);
+extern int slot;
+extern int device;
+extern int autoSaveLoad;
 
 /****************************************************************************
  * Convert GC Joystick Readings to JOY
@@ -85,21 +90,56 @@ unsigned int GetAnalog( int Joy )
 
     return i;
 }
+extern int gcScreenX;
+extern int gcScreenY;
+extern int SCOPEPADCAL;
+char msg[12];
 
 unsigned int GetJoys(int which)
 {
     unsigned int joypads;
     signed char px;
 
-    /*** Check for menu combo ***/
-    //if ( ( PAD_ButtonsHeld(0) & PAD_TRIGGER_Z ) && ( PAD_ButtonsHeld(0) & PAD_TRIGGER_R ) )
-    //if ( PAD_ButtonsHeld(0) == ( PAD_TRIGGER_Z  | PAD_TRIGGER_R ) )
-
     /*** Check for menu, now CStick left/right (and if you use a HORI controller Z + R works too) ***/
     px = PAD_SubStickX (0);
-    if ( (px < -PADCAL || px > PADCAL) || (PAD_ButtonsHeld(0) == ( PAD_TRIGGER_Z  | PAD_TRIGGER_R )) || (PAD_ButtonsHeld(0) == ( PAD_TRIGGER_L  | PAD_TRIGGER_R | PAD_BUTTON_X | PAD_BUTTON_Y )))
-        ConfigRequested = 1;
-
+    if ( (px < -PADCAL) || (PAD_ButtonsHeld(0) == ( PAD_TRIGGER_Z  | PAD_TRIGGER_R )) || (PAD_ButtonsHeld(0) == ( PAD_TRIGGER_L  | PAD_TRIGGER_R | PAD_BUTTON_X | PAD_BUTTON_Y )))
+    {
+		if (autoSaveLoad && Memory.SRAMSize)
+		{
+			Settings.Paused =TRUE;
+			S9xSetSoundMute(TRUE);
+			
+			SaveSRAM(1,slot,device);
+			
+			Settings.Paused =FALSE;
+			S9xSetSoundMute(FALSE);
+		}
+		ConfigRequested = 1;
+	}
+	
+	if (px > PADCAL){ 
+		S9xNextController ();
+		static char *controllers [] = {
+			WINPROC_CONTROLERS0, 
+			WINPROC_CONTROLERS1, 
+			WINPROC_CONTROLERS2,
+			WINPROC_CONTROLERS3, 
+			WINPROC_CONTROLERS4, 
+			WINPROC_CONTROLERS5, 
+			WINPROC_CONTROLERS6
+		};
+		S9xSetInfoString (controllers [IPPU.Controller]);
+		Settings.ControllerOption=IPPU.Controller;
+	}
+	
+	signed char padX = PAD_StickX(0);
+	signed char padY = PAD_StickY(0);
+	
+	//For debugging
+	if ((padX < -SCOPEPADCAL) || (padX > SCOPEPADCAL) || (padY > SCOPEPADCAL) || (padY < -SCOPEPADCAL)){
+		sprintf(msg, "X=%d Y=%d", gcScreenX, gcScreenY);	
+		S9xSetInfoString (msg);
+	}
     joypads = 0;
 
     joypads = DecodeJoy( PAD_ButtonsHeld(which) );

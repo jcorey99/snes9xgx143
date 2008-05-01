@@ -2866,10 +2866,8 @@ void ProcessSuperScope ()
     int x, y = 0;
     uint32 buttons = 0;
 
-#ifndef NGC
-
-    if (IPPU.Controller == SNES_SUPERSCOPE &&
-		S9xReadSuperScopePosition (x, y, buttons))
+//#ifndef NGC
+    if (IPPU.Controller == SNES_SUPERSCOPE && S9xReadSuperScopePosition (x, y, buttons))
 	{
 #define SUPERSCOPE_SIGNATURE 0x00ff
 		uint32 scope;
@@ -2896,7 +2894,7 @@ void ProcessSuperScope ()
 		IPPU.Joypads [1] = scope;
 	}
 
-#endif
+//#endif
 }
 
 void S9xNextController ()
@@ -2979,9 +2977,9 @@ void S9xUpdateJustifiers()
 
 	if(Memory.FillRAM[0x4201]&0x80)
 	{
-#ifndef NGC		
+//#ifndef NGC
 		S9xReadSuperScopePosition(x,y,buttons);
-#endif		
+//#endif		
 		x+=40;
 		if (x > 295)
 			x = 295;

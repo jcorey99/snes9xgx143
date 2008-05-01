@@ -12,6 +12,8 @@
 #include "iplfont.h"
 #include "gcstate.h"
 
+#define PSOSDLOADID 0x7c6000a6
+
 extern unsigned int copynow;
 extern GXRModeObj *vmode;
 extern unsigned int *xfb[2];
@@ -30,24 +32,23 @@ extern int timerstyle;
 extern int PADCAL;
 
 extern int showspinner;
-
 extern int showcontroller;
-
 extern int UseSDCARD;
-
 extern void uselessinquiry ();
-
 extern int allowupdown;
 
 extern unsigned char isWii;
+extern void S9xSoftReset();
 
 void credits();
 int ConfigMenu();
 void SetScreen();
 void ClearScreen();
 
-char *title = "Snes9x 1.43 - GX Edition 0.1.1";
+char *title = "Snes9x 1.43 - GX Edition 0.1.2";
 extern int CARDSLOT;
+
+int *psoid = (int *) 0x80001800;
 
 #define SOFTRESET_ADR ((volatile u32*)0xCC003024)
 
@@ -151,7 +152,6 @@ void SetScreen()
  ****************************************************************************/
 void ClearScreen()
 {
-
     copynow = GX_FALSE;
     whichfb ^= 1;
     VIDEO_ClearFrameBuffer(vmode, xfb[whichfb], COLOR_WHITE);
@@ -163,7 +163,6 @@ void ClearScreen()
  ****************************************************************************/
 void Welcome()
 {
-
     char work[1024];
     char titles[9][10] = {
         { "ROM" }, { "ROM ID" }, { "Company" },
@@ -320,13 +319,13 @@ char PADMap( int padvalue, int padnum )
  *
  * This screen simply let's the user swap A/B/X/Y around.
  ****************************************************************************/
-int configpadcount = 8;
-char padmenu[8][20] = { 
+int configpadcount = 9;
+char padmenu[9][20] = { 
     { "SETUP A" }, 
     { "SNES BUTTON A - X" }, { "SNES BUTTON B - A" },
     { "SNES BUTTON X - B" }, { "SNES BUTTON Y - Y" },
     { "ANALOG CLIP   - 70"}, { "ALLOW U+D / L+R OFF"}, 
-    { "Return to previous" } 
+    { "SUPER SCOPE: OFF"  }, { "Return to previous" } 
 };
 /*int padmap[4] = { 0,1,2,3};*/
 int conmap[5][4] = { 
@@ -340,7 +339,6 @@ int PADCON = 0;
 
 void ConfigPAD()
 {
-
     int menu = 0;
     short j;
     int redraw = 1;
@@ -360,9 +358,10 @@ void ConfigPAD()
     while ( quit == 0 )
     {
         if ( redraw ) {
-            sprintf(padmenu[0],"SETUP %c", PADCON + 65);
-            strcpy(padmenu[6], allowupdown == 1 ? "ALLOW U+D / L+R ON" : "ALLOW U+D / L+R OFF");
-            sprintf(padmenu[5],"ANALOG CLIP   - %d", PADCAL);
+            sprintf(padmenu[0], "SETUP %c", PADCON + 65);
+            sprintf(padmenu[5], "ANALOG CLIP   - %d", PADCAL);
+            sprintf(padmenu[6], allowupdown == 1 ? "ALLOW U+D / L+R ON" : "ALLOW U+D / L+R OFF");
+            sprintf(padmenu[7], (Settings.SuperScope) ? "SUPER SCOPE:  ON" : "SUPER SCOPE: OFF");
             DrawMenu("Gamecube Pad Configuration", &padmenu[0], configpadcount, menu);
         }
 
@@ -404,17 +403,26 @@ void ConfigPAD()
 
                 case 5: i = -1;
                         PADCAL += 5;
-                        if ( PADCAL > 90 )
+                        if ( PADCAL > 70 )
                             PADCAL = 40;
 
                         sprintf(padmenu[5],"ANALOG CLIP   - %d", PADCAL);
                         break;
 
                 case 6: i = -1;
-                        allowupdown ^= 1;
-                        break;
+                    allowupdown ^= 1;
+                    break;
 
-                case 7: quit = 1; break;
+                case 7:
+                    Settings.SuperScope ^= 1;
+					
+                    if (Settings.SuperScope){ Settings.ControllerOption = SNES_SUPERSCOPE; }
+                    else{ Settings.ControllerOption = SNES_JOYPAD; }
+					
+                    Settings.SuperScopeMaster = Settings.SuperScope;
+                    break;
+
+                case 8: quit = 1; break;
                 default: break;
             }
 
@@ -449,10 +457,11 @@ char sgmenu[5][20] = {
 };
 
 int slot = 0;
-int device = 0;
+int device = (psoid[0] != PSOSDLOADID) ? 0 : 1; //If not using SD device MCARD : SDCARD
 char saveTitle[1][20]= {
 	{ "Save SRAM Manager" }
 };
+
 
 void savegame(int type) //{0=SRAM, 1=STATE}
 {
@@ -503,7 +512,11 @@ void savegame(int type) //{0=SRAM, 1=STATE}
                     else NGCFreezeGame (device, slot); //Save State
                     break;
                 case 3 :
-                    if (!type) SaveSRAM(0,slot,device);  //Load SRAM
+                    if (!type){ 
+							if (SaveSRAM(0,slot,device)){  //Load SRAM
+								S9xSoftReset(); //Reset emu
+							}
+						}
                     else NGCUnfreezeGame (device, slot); //Load State
                     break;
                 case 4 :
@@ -523,12 +536,13 @@ void savegame(int type) //{0=SRAM, 1=STATE}
 /****************************************************************************
  * File Manager Menu
  ****************************************************************************/
-int managercount = 3;
-char managermenu[3][20] = {
+int managercount = 4;
+char managermenu[4][20] = {
 	{"SRAM Manager"}, {"STATE Manager"},
-    {"Return to previous"}
+    {"Auto SRAM:  ON"}, {"Return to previous"}
 }; 
- 
+
+int autoSaveLoad = 1; 
 int FileMenu ()
 {
 	int quit = 0;
@@ -540,6 +554,7 @@ int FileMenu ()
 	{
 	
 		if ( redraw ){
+			sprintf(managermenu[2], (autoSaveLoad) ? "Auto SRAM:  ON" : "Auto SRAM: OFF");
 			DrawMenu("Save File Manager", &managermenu[0], managercount, menu);
 		}
 		
@@ -565,6 +580,9 @@ int FileMenu ()
 					savegame(1);
 					break;
 				case 2:
+					autoSaveLoad ^= 1;
+					break;
+				case 3:
 					quit = 1;
 					break;
 			}
@@ -682,7 +700,7 @@ int mediacount = 4;
 
 char mediamenu[4][20] = { 
     { "Load from DVD" }, { "Load from SDCARD"}, 
-    { "SDGecko: Slot A" }, { "Return to previous" } 
+    { "SDCARD: Slot A" }, { "Return to previous" } 
 };
 
 int numsdslots = 2;
@@ -731,7 +749,7 @@ int MediaSelect(){
                 case 2:
                         choosenSDSlot++;
                         if (choosenSDSlot >= numsdslots) choosenSDSlot = 0;
-                        sprintf(mediamenu[2], "SDGecko: %s", sdslots[choosenSDSlot]);
+                        sprintf(mediamenu[2], "SDCARD: %s", sdslots[choosenSDSlot]);
                         break;
                 case 3: quit = 1;
                         break;
