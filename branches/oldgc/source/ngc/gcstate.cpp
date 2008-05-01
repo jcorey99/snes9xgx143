@@ -42,8 +42,7 @@
 #include "gcconfig.h"
 
 #define SNESSAVEDIR "snes9x\\saves" 
-#define SAVEBUFFERSIZE 65536
-//#define VERIFBUFFERSIZE 65536
+#define SAVEBUFFERSIZE 0x30000
 #define MEMBUFFER (512 * 1024)
 
 extern unsigned short saveicon[1024];
@@ -53,9 +52,7 @@ extern void NGCFreezeStruct ();
 extern bool8 S9xUnfreezeGame (const char *filename);
 
 static u8 SysArea[CARD_WORKAREA] ATTRIBUTE_ALIGN(32);
-extern unsigned char savebuffer[0x22000] ATTRIBUTE_ALIGN (32);
-//unsigned char savebuffer0[SAVEBUFFERSIZE] ATTRIBUTE_ALIGN (32);
-//unsigned char verifbuffer[VERIFBUFFERSIZE] ATTRIBUTE_ALIGN (32);
+extern unsigned char savebuffer[SAVEBUFFERSIZE] ATTRIBUTE_ALIGN (32);
 
 extern int MountTheCard(int slot);
 extern int CardFileExists(char *filename, int slot);
@@ -110,7 +107,7 @@ int LoadBufferFromMC (unsigned char *buf, int slot, char *filename)
 		if (blocks % SectorSize)
 			blocks += SectorSize;
 		
-		memset (buf, 0, 0x22000);
+		memset (buf, 0, SAVEBUFFERSIZE);
 		
 		bytesleft = blocks;
 		bytesread = 0;
@@ -377,7 +374,7 @@ int NGCFreezeGame (int device, int slot)
     //S9xPrepareSoundForSnapshotSave (TRUE);
     //S9xSetSoundMute (FALSE);
 	
-	memset(savebuffer, 0, 0x22000);
+	memset(savebuffer, 0, SAVEBUFFERSIZE);
 
 	/*** Copy in save icon ***/
     offset = sizeof (saveicon);
@@ -473,8 +470,6 @@ int NGCUnfreezeGame (int device, int slot)
 	int ret = 0;
     
     bufoffset = 0;
-
-    //memset(savebuffer, 0, 0x22000);
     
     if (device == 1)  /*** Load state from SDCARD ***/
     {

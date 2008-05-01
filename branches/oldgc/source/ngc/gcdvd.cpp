@@ -64,6 +64,11 @@ void GetSDInfo();
 extern int choosenSDSlot;
 extern unsigned char isWii;
 int sdslot = 0;
+
+extern int SaveSRAM( int mode, int slot, int type);
+extern int slot;
+extern int device;
+extern int autoSaveLoad;
 /****************************************************************************
  * DVD Lowlevel Functions
  *
@@ -73,7 +78,6 @@ int sdslot = 0;
 
 void dvd_inquiry()
 {
-
     dvd[0] = 0x2e;
     dvd[1] = 0;
     dvd[2] = 0x12000000;
@@ -98,7 +102,6 @@ void dvd_inquiry()
  ****************************************************************************/
 void uselessinquiry ()
 {
-
     dvd[0] = 0;
     dvd[1] = 0;
     dvd[2] = 0x12000000;
@@ -151,7 +154,6 @@ void dvd_extension()
 
 void dvd_motor_on_extra()
 {
-
     dvd[0] = 0x2e;
     dvd[1] = 0;
     dvd[2] = 0xfe110000 | DEBUG_START_DRIVE | DEBUG_ACCEPT_COPY | DEBUG_DISC_CHECK;
@@ -161,7 +163,6 @@ void dvd_motor_on_extra()
     dvd[6] = 0;
     dvd[7] = 1;
     while ( dvd[7] & 1 );
-
 }
 
 void dvd_motor_off( )
@@ -479,8 +480,6 @@ int updateSDdirname()
         if ((strlen(rootSDdir)+1+strlen(filelist[selection].filename)) < SDCARD_MAX_PATH_LEN) 
         {
             /* handles root name */
-            //sprintf(tmpCompare, "dev%d:\\snes9x\\..",choosenSDSlot);
-            //if (strcmp(rootSDdir, tmpCompare) == 0) sprintf(rootSDdir,"dev%d:",choosenSDSlot);
             if (strcmp(rootSDdir, sdslot ? "dev1:\\snes9x\\.." : "dev0:\\snes9x\\..") == 0) sprintf(rootSDdir,"dev%d:",sdslot);
 
             /* update current directory name */
@@ -676,6 +675,9 @@ void FileSelector()
                 LoadFromDVD = 1;
                 Memory.LoadROM( "DVD" );
                 Memory.LoadSRAM( "DVD" );
+				if (autoSaveLoad && Memory.SRAMSize && SaveSRAM(0,slot,device)) //Load SRAM 
+					S9xSoftReset(); //Reset emu
+
                 haverom = 1;
             }
             redraw = 1;

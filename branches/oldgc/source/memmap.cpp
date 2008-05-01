@@ -1628,19 +1628,19 @@ void CMemory::InitROM (bool8 Interleaved)
 	sprintf (ROMId, "%s", Safe (ROMId));
 	sprintf (CompanyId, "%s", Safe (CompanyId));
 	
-		sprintf (String, "\"%s\" [%s] %s, %s, Type: %s, Mode: %s, TV: %s, S-RAM: %s, ROMId: %s Company: %2.2s CRC32: %08X",
-		ROMName,
-		(ROMChecksum + ROMComplementChecksum != 0xffff ||
-		ROMChecksum != CalculatedChecksum) ? "bad checksum" : "checksum ok",
-		MapType (),
-		Size (),
-		KartContents (),
-		MapMode (),
-		TVStandard (),
-		StaticRAMSize (),
-		ROMId,
-		CompanyId,
-		ROMCRC32);
+	sprintf (String, "\"%s\" [%s] %s, %s, Type: %s, Mode: %s, TV: %s, S-RAM: %s, ROMId: %s Company: %2.2s CRC32: %08X",
+	ROMName,
+	(ROMChecksum + ROMComplementChecksum != 0xffff ||
+	ROMChecksum != CalculatedChecksum) ? "bad checksum" : "checksum ok",
+	MapType (),
+	Size (),
+	KartContents (),
+	MapMode (),
+	TVStandard (),
+	StaticRAMSize (),
+	ROMId,
+	CompanyId,
+	ROMCRC32);
 	
 	S9xMessage (S9X_INFO, S9X_ROM_INFO, String);
 #ifdef __WIN32__
