@@ -28,7 +28,7 @@ extern int SaveTheSRAM( int mode, int slot, int type);
 extern int OpenDVD();
 extern int OpenSD();
 #ifdef HW_RVL
-extern int OpenFrontSD();
+extern int OpenWiiSD();
 #endif
 extern void dvd_motor_off();
 extern void uselessinquiry ();
@@ -39,7 +39,7 @@ extern int showspinner;
 extern int showcontroller;
 
 extern int UseSDCARD;
-extern int UseFrontSDCARD;
+extern int UseWiiSDCARD;
 extern int allowupdown;
 
 extern unsigned char isWii;
@@ -848,7 +848,7 @@ int MediaSelect() {
                 case MEDIA_SDCARD:
 #ifdef HW_RVL
                         if (ChosenSlot == 2) {
-                            OpenFrontSD();
+                            OpenWiiSD();
                         } else
 #endif
                             OpenSD();
@@ -866,7 +866,7 @@ int MediaSelect() {
                         quit = 1;
 #else
                         UseSDCARD = 0;
-                        UseFrontSDCARD = 0;
+                        UseWiiSDCARD = 0;
                         OpenDVD();
                         return 1;
 #endif

@@ -27,21 +27,11 @@
 #include "snapshot.h"
 #include "srtc.h"
 #ifdef HW_RVL
-#include "tff.h"
-#include "integer.h"
+#include "wiisd/tff.h"
+#include "wiisd/integer.h"
+#include "wiisd/sdio.h"
+extern FATFS frontfs;
 #endif
-
-//#include "Snes9xGx.h"
-//#include "filesel.h"
-//#include "ftfont.h"
-//#include "smbload.h"
-//#include "mcsave.h"
-//#include "saveicon.h"
-
-/*extern "C"
-{
-#include "smb.h"
-}*/
 
 #include "gcconfig.h"
 
@@ -425,13 +415,22 @@ int NGCFreezeGame (int device, int slot) {
             ShowAction((char*)"Saving STATE to Wii SD...");
             sprintf(filename, "/%s/%s/%08X.snz", SNESDIR, SAVEDIR, Memory.ROMCRC32);
             FIL fp;
-            WORD written = 0;
-            u32 total_written = 0, datasize = offset;
+            u32 written = 0, total_written = 0, datasize = offset;
             int res;
 
+            /* Mount WiiSD */
+            if ((res = f_mount(0, &frontfs)) != FR_OK) {
+                sprintf(msg, "f_mount failed, error %d", res);
+                WaitPrompt(msg);
+                f_mount(0,NULL);
+                sd_deinit();
+                return 1;
+            }
             if ((res = f_open(&fp, filename, FA_CREATE_ALWAYS | FA_WRITE)) != FR_OK) {
                 sprintf(msg, "f_open failed, error %d", res);
                 WaitPrompt(msg);
+                f_mount(0,NULL);
+                sd_deinit();
                 return 1;
             }
             sprintf(msg, "Writing %d bytes..", datasize);
@@ -442,6 +441,8 @@ int NGCFreezeGame (int device, int slot) {
                     sprintf(msg, "f_write failed, error %d", res);
                     WaitPrompt(msg);
                     f_close(&fp);
+                    f_mount(0,NULL);
+                    sd_deinit();
                     return 1;
                 }
                 offset -= written;
@@ -452,6 +453,8 @@ int NGCFreezeGame (int device, int slot) {
                 sprintf(msg, "f_write failed, error %d", res);
                 WaitPrompt(msg);
                 f_close(&fp);
+                f_mount(0,NULL);
+                sd_deinit();
                 return 1;
             }
             offset -= written;
@@ -459,9 +462,11 @@ int NGCFreezeGame (int device, int slot) {
             sprintf(msg, "Wrote %d of %d bytes", total_written, datasize);
             ShowAction(msg);
             if (total_written == datasize) {
-                sprintf(msg, "Saved %d bytes.", written);
+                sprintf(msg, "Saved %d bytes successfully.", written);
                 ShowAction(msg);
                 f_close(&fp);
+                f_mount(0,NULL);
+                sd_deinit();
                 return 0;
             }
 
@@ -470,6 +475,8 @@ int NGCFreezeGame (int device, int slot) {
             sprintf(msg, "Unable to save %s", filename);
             WaitPrompt(msg);
             f_close(&fp);
+            f_mount(0,NULL);
+            sd_deinit();
             return 1;
 #endif
         }
@@ -480,8 +487,8 @@ int NGCFreezeGame (int device, int slot) {
         ret = SaveBufferToMC ( savebuffer, slot, filename, offset );
 
         if ( ret ) {
-            sprintf (filename, "Saved %d bytes successfully", ret);
-            WaitPrompt (filename);
+            sprintf(filename, "Saved %d bytes successfully", ret);
+            ShowAction(filename);
         }
     }
 
@@ -532,11 +539,19 @@ int NGCUnfreezeGame (int device, int slot)
             ShowAction((char*)"Loading STATE file from Wii SD...");    
             sprintf(filename, "/%s/%s/%08X.snz", SNESDIR, SAVEDIR, Memory.ROMCRC32);
             FIL fp;
-            WORD bytes_read;
-            u32 bytes_read_total;
+            u32 bytes_read, bytes_read_total;
             FILINFO finfo;
 
             int res;
+            memset(&finfo, 0, sizeof(finfo));
+            /* Mount WiiSD */
+            if ((res = f_mount(0, &frontfs)) != FR_OK) {
+                sprintf(msg, "f_mount failed, error %d", res);
+                WaitPrompt(msg);
+                f_mount(0,NULL);
+                sd_deinit();
+                return 0;
+            }
             if ((res=f_stat(filename, &finfo)) != FR_OK) {
                 if (res == FR_NO_FILE) {
                     sprintf(msg, "Unable to find %s.", filename);
@@ -545,11 +560,15 @@ int NGCUnfreezeGame (int device, int slot)
                     sprintf(msg, "f_stat failed, error %d", res);
                 }
                 WaitPrompt(msg);
+                f_mount(0,NULL);
+                sd_deinit();
                 return 0;
             }
             if ((res=f_open(&fp, filename, FA_READ)) != FR_OK) {
                 sprintf(msg, "Failed to open %s, error %d.", filename, res);
                 WaitPrompt(msg);
+                f_mount(0,NULL);
+                sd_deinit();
                 return 0;
             }
 
@@ -558,6 +577,8 @@ int NGCUnfreezeGame (int device, int slot)
                 if (f_read(&fp, &savebuffer[bytes_read_total], 0x200, &bytes_read) != FR_OK) {
                     WaitPrompt((char*)"f_read failed");
                     f_close(&fp);
+                    f_mount(0,NULL);
+                    sd_deinit();
                     return 0;
                 }
 
@@ -569,11 +590,15 @@ int NGCUnfreezeGame (int device, int slot)
             if (bytes_read_total < finfo.fsize) {
                 WaitPrompt((char*)"read failed");
                 f_close(&fp);
+                f_mount(0,NULL);
+                sd_deinit();
                 return 0;
             }
             sprintf(msg, "Read %d of %ld bytes.", bytes_read_total, finfo.fsize);
             ShowAction(msg);
             f_close(&fp);
+            f_mount(0,NULL);
+            sd_deinit();
             offset = bytes_read_total;
 #endif
         }
