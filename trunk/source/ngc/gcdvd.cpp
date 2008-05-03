@@ -907,6 +907,7 @@ int OpenWiiSD() {
     haveSDdir = 0;
     char msg[128];
 
+    haveWiiSDdir = 0; // Temp fix
     memset(&vfs, 0, sizeof(VFATFS));
     if (haveWiiSDdir == 0) {
         /* don't mess with DVD entries */
