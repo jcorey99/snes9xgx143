@@ -51,10 +51,8 @@ void ClearScreen();
 
 void Reboot() {
 #ifdef HW_RVL
-    // Thanks to hell_hibou
-    int fd = IOS_Open("/dev/stm/immediate", 0);
-    IOS_Ioctl(fd, 0x2001, NULL, 0, NULL, 0);
-    IOS_Close(fd);
+    // Thanks to eke-eke
+    SYS_ResetSystem(SYS_RETURNTOMENU, 0, 0);
 #else
 #define SOFTRESET_ADR ((volatile u32*)0xCC003024)
     *SOFTRESET_ADR = 0x00000000;
