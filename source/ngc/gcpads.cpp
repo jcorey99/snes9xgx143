@@ -8,6 +8,7 @@
 
 #include <gccore.h>
 #include <snes9x.h>
+#include <memmap.h>
 #include "gcgxvideo.h"
 
 PADStatus gcjoypads[4];
@@ -23,6 +24,11 @@ unsigned short gcpadmap[] = { PAD_BUTTON_X, PAD_BUTTON_A, PAD_BUTTON_B, PAD_BUTT
 unsigned int snespadmap[] = { SNES_A_MASK, SNES_B_MASK, SNES_X_MASK, SNES_Y_MASK,
     SNES_UP_MASK, SNES_DOWN_MASK, SNES_LEFT_MASK, SNES_RIGHT_MASK,
     SNES_START_MASK, SNES_SELECT_MASK, SNES_TR_MASK, SNES_TL_MASK };
+
+int SaveTheSRAM(int mode, int slot, int type);
+extern int ChosenSlot;
+extern int ChosenDevice;
+extern int autoSaveLoad;
 
 /****************************************************************************
  * Convert GC Joystick Readings to JOY
@@ -86,19 +92,25 @@ unsigned int GetAnalog( int Joy )
     return i;
 }
 
+bool8 S9xSetSoundMute (bool8 mute);
 unsigned int GetJoys(int which)
 {
     unsigned int joypads;
     signed char px;
 
-    /*** Check for menu combo ***/
-    //if ( ( PAD_ButtonsHeld(0) & PAD_TRIGGER_Z ) && ( PAD_ButtonsHeld(0) & PAD_TRIGGER_R ) )
-    //if ( PAD_ButtonsHeld(0) == ( PAD_TRIGGER_Z  | PAD_TRIGGER_R ) )
-
-    /*** Check for menu, now CStick left/right (and if you use a HORI controller Z + R works too) ***/
+    /*** Check for menu, CStick left, Z+R, or L+R+X+Y ***/
     px = PAD_SubStickX (0);
-    if ( (px < -PADCAL || px > PADCAL) || (PAD_ButtonsHeld(0) == ( PAD_TRIGGER_Z  | PAD_TRIGGER_R )) || (PAD_ButtonsHeld(0) == ( PAD_TRIGGER_L  | PAD_TRIGGER_R | PAD_BUTTON_X | PAD_BUTTON_Y )))
+    if ( (px < -PADCAL) || (PAD_ButtonsHeld(0) == ( PAD_TRIGGER_Z  | PAD_TRIGGER_R )) ||
+        (PAD_ButtonsHeld(0) == ( PAD_TRIGGER_L  | PAD_TRIGGER_R | PAD_BUTTON_X | PAD_BUTTON_Y ))) {
+        if (autoSaveLoad && Memory.SRAMSize) {
+            Settings.Paused = TRUE;
+            S9xSetSoundMute(TRUE);
+            SaveTheSRAM(1,ChosenSlot,ChosenDevice);
+            Settings.Paused = FALSE;
+            S9xSetSoundMute(FALSE);
+        }
         ConfigRequested = 1;
+    }
 
     joypads = 0;
 

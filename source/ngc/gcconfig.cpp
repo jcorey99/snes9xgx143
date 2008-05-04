@@ -43,6 +43,7 @@ extern int UseWiiSDCARD;
 extern int allowupdown;
 
 extern unsigned char isWii;
+int SaveSRAM( int mode, int slot, int type);
 
 void Credits();
 int MainMenu();
@@ -509,7 +510,7 @@ char SdSlots[3][10] = {
 enum SLOTS {
     SLOT_A, SLOT_B, SLOT_WIISD
 };
-int ChosenSlot = 0;
+int ChosenSlot = 2;
 int ChosenDevice = 1;
 void SaveMenu(int SaveType) { // 0=SRAM, 1=STATE
     int ChosenMenu = 0;
@@ -531,11 +532,9 @@ void SaveMenu(int SaveType) { // 0=SRAM, 1=STATE
     short j;
 
     showspinner = 1;
-    if (!isWii)
-        SdSlotCount = 2;
-#ifdef HW_RVL
-    ChosenSlot = 2;
-    ChosenDevice = 1;
+    // Limit GC mode to just two slots
+#ifndef HW_RVL
+    SdSlotCount = 2;
 #endif
 
     while ( quit == 0 ) {
@@ -577,7 +576,9 @@ void SaveMenu(int SaveType) { // 0=SRAM, 1=STATE
                     break;
                 case SAVE_LOAD:
                     if (SaveType) NGCUnfreezeGame(ChosenDevice, ChosenSlot); // Load State
-                    else SaveTheSRAM(0, ChosenSlot, ChosenDevice);  // Load SRAM
+                    else if (SaveTheSRAM(0, ChosenSlot, ChosenDevice))  // Load SRAM
+                            S9xSoftReset(); // Reset emu
+
                     quit = 1;
                     break;
                 case SAVE_DEVICE:
@@ -626,18 +627,19 @@ void SaveMenu(int SaveType) { // 0=SRAM, 1=STATE
     }
 }
 
+int autoSaveLoad = 1;
 /****************************************************************************
  * File Manager Menu
  ****************************************************************************/
 int FileMenu () {
     int ChosenMenu = 0;
-    int FileMenuCount = 3;
-    char FileMenu[3][MENU_STRING_LENGTH] = {
+    int FileMenuCount = 4;
+    char FileMenu[4][MENU_STRING_LENGTH] = {
         { "SRAM Manager"}, {"STATE Manager"},
-        { MENU_EXIT }
+        { "Auto SRAM" }, { MENU_EXIT }
     };
     enum FILE_MENU {
-        FILE_SRAM, FILE_STATE,
+        FILE_SRAM, FILE_STATE, FILE_AUTO,
         FILE_EXIT
     };
 
@@ -649,6 +651,7 @@ int FileMenu () {
         if ( redraw ) {
             strcpy(FileMenu[FILE_SRAM], "SRAM " MENU_FILE_MANAGER);
             strcpy(FileMenu[FILE_STATE], "STATE " MENU_FILE_MANAGER);
+            sprintf(FileMenu[FILE_AUTO], "%s: %s", MENU_FILE_AUTO, autoSaveLoad ? "ON":"OFF");
             DrawMenu((char*)MENU_FILE_TITLE, FileMenu, FileMenuCount, ChosenMenu);
         }
 
@@ -672,6 +675,9 @@ int FileMenu () {
                     break;
                 case FILE_STATE:
                     SaveMenu(1);
+                    break;
+                case FILE_AUTO:
+                    autoSaveLoad ^= 1;
                     break;
                 case FILE_EXIT:
                     quit = 1;
@@ -793,6 +799,7 @@ void EmuOptionsMenu() {
  * Media Select Screen
  ****************************************************************************/
 extern int haveSDdir;
+extern int haveWiiSDdir;
 int MediaSelect() {
     int MediaMenuCount = 5;
     char MediaMenu[5][MENU_STRING_LENGTH] = { 
@@ -815,7 +822,6 @@ int MediaSelect() {
 #ifdef HW_RVL
     strcpy(MediaMenu[MEDIA_DVD], MediaMenu[MEDIA_EXIT]);
     MediaMenuCount = 3;
-    ChosenSlot = 2; // default to WiiSD
 #else
     SdSlotCount = 2;
 #endif
@@ -823,6 +829,7 @@ int MediaSelect() {
     while ( quit == 0 ) {
         // TODO: straighten out haveSDdir vs haveWiiSDdir
         haveSDdir = 0;
+        haveWiiSDdir = 0;
         if ( redraw ) {
             sprintf(MediaMenu[MEDIA_SLOT], "SDCard: %s", SdSlots[ChosenSlot]);
             DrawMenu((char*)MENU_MEDIA_TITLE, MediaMenu, MediaMenuCount, ChosenMenu);

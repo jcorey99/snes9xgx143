@@ -76,9 +76,13 @@ extern void mdelay(unsigned int us);
 extern int IsXenoGCImage( char *buffer );
 void GetSDInfo();
 
+extern int SaveTheSRAM( int mode, int slot, int type);
+extern int autoSaveLoad;
 extern int ChosenSlot;
+extern int ChosenDevice;
 extern unsigned char isWii;
 int sdslot = 0;
+
 /****************************************************************************
  * DVD Lowlevel Functions
  *
@@ -771,6 +775,9 @@ void FileSelector() {
                 LoadFromDVD = 1;
                 Memory.LoadROM( "DVD" );
                 Memory.LoadSRAM( "DVD" ); // doesn't do anything
+                if (autoSaveLoad && Memory.SRAMSize)
+                    if (SaveTheSRAM(0, ChosenSlot, ChosenDevice))
+                        S9xSoftReset(); // Reset emu
                 haverom = 1;
             }
             redraw = 1;
@@ -907,7 +914,6 @@ int OpenWiiSD() {
     haveSDdir = 0;
     char msg[128];
 
-    haveWiiSDdir = 0; // Temp fix
     memset(&vfs, 0, sizeof(VFATFS));
     if (haveWiiSDdir == 0) {
         /* don't mess with DVD entries */
