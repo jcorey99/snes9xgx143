@@ -22,21 +22,21 @@ FATFS frontfs;
 #define SAVEDIR "saves"
 #define SAVEBUFFERSIZE 0x30000
 
-extern void WaitPrompt( char *msg );
-extern void ShowAction( char *msg );
+void WaitPrompt( char *msg );
+void ShowAction( char *msg );
 static u8 SysArea[CARD_WORKAREA] ATTRIBUTE_ALIGN(32);
 unsigned char savebuffer[SAVEBUFFERSIZE] ATTRIBUTE_ALIGN (32);
 card_dir CardDir;
 card_file CardFile;
 card_stat CardStatus;
 
+char PADMap( int padvalue, int padnum );
+void S9xSoftReset();
 int ISACTIVE[2] = { 0, 0 };
 char saveinfo[4];
 extern u8 mpads[4];
-extern char PADMap( int padvalue, int padnum );
-extern void S9xSoftReset();
 
-extern void uselessinquiry ();
+void uselessinquiry ();
 
 /****************************************************************************
  * Clear the savebuffer

@@ -37,6 +37,7 @@
 
 // File menu
 #define MENU_FILE_TITLE         "Save Bestand Manager"
+#define MENU_FILE_AUTO          "Auto SRAM"
 #define MENU_FILE_MANAGER       "Manager"
 
 // Save menu
