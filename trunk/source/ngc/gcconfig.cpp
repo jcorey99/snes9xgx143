@@ -946,11 +946,8 @@ int MainMenu() {
     int redraw, quit = 0;
     int isQuitting = 0;
 
-#ifdef HW_RVL
-    void (*PSOReload)() = (void(*)())0x90000020;
-#else
-    void (*PSOReload)() = (void(*)())0x80001800;
-#endif
+    //void (*PSOReload)() = (void(*)())0x80001800;
+    extern void (*PSOReload)();
 
     copynow = GX_FALSE;
     Settings.Paused = TRUE;

@@ -14,10 +14,7 @@
 PADStatus gcjoypads[4];
 extern int ConfigRequested;
 
-/*** NOTE: In these maps, left and right triggers are reversed 
-  This is an error in libogc pad.h, so I've left it in
-  to save devs having to alter their copies ***/
-unsigned short gcpadmap[] = { PAD_BUTTON_X, PAD_BUTTON_A, PAD_BUTTON_B, PAD_BUTTON_Y,
+unsigned short gcpadmap[] = { PAD_BUTTON_A, PAD_BUTTON_B, PAD_BUTTON_X, PAD_BUTTON_Y,
     PAD_BUTTON_UP, PAD_BUTTON_DOWN, PAD_BUTTON_LEFT, PAD_BUTTON_RIGHT,
     PAD_BUTTON_START, PAD_TRIGGER_Z, PAD_TRIGGER_R, PAD_TRIGGER_L };
 
@@ -100,8 +97,8 @@ unsigned int GetJoys(int which)
 
     /*** Check for menu, CStick left, Z+R, or L+R+X+Y ***/
     px = PAD_SubStickX (0);
-    if ( (px < -PADCAL) || (PAD_ButtonsHeld(0) == ( PAD_TRIGGER_Z  | PAD_TRIGGER_R )) ||
-        (PAD_ButtonsHeld(0) == ( PAD_TRIGGER_L  | PAD_TRIGGER_R | PAD_BUTTON_X | PAD_BUTTON_Y ))) {
+    if ( (px < -PADCAL) || (PAD_ButtonsHeld(0) ==
+        ( PAD_TRIGGER_L  | PAD_TRIGGER_R | PAD_BUTTON_X | PAD_BUTTON_Y ))) {
         if (autoSaveLoad && Memory.SRAMSize) {
             Settings.Paused = TRUE;
             S9xSetSoundMute(TRUE);
@@ -111,6 +108,8 @@ unsigned int GetJoys(int which)
         }
         ConfigRequested = 1;
     }
+    if (PAD_ButtonsHeld(0) == (PAD_TRIGGER_Z | PAD_TRIGGER_R))
+        ConfigRequested = 1;
 
     joypads = 0;
 
