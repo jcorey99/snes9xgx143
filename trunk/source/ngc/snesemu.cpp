@@ -29,9 +29,12 @@
 #include "port.h"
 #include "gcconfig.h"
 #include "gctime.h"
+#include "gecko_console.h"
 
 uint32 screen_width = 0;
 uint32 screen_height = 0;
+
+extern u8 vmode_60hz;
 
 /*** Video defaults ***/
 unsigned char *offscreen;
@@ -55,12 +58,13 @@ extern void unpackanim();
 static unsigned char *inquiry=(unsigned char *)0x80000004;
 extern void dvd_inquiry();
 
+
 void (*PSOReload)() = (void(*)())0x80001800;
 static void reset_cb() {
     PSOReload();
 }
-tb_t prev;
-tb_t now;
+long long prev;
+long long now;
 
 /****************************************************************************
  * Dummy Message Handler
@@ -107,12 +111,11 @@ void S9xSyncSpeed()
             IPPU.SkippedFrames = 0;
         }
     } else {
-        mftb(&now);
-
-        if ( tb_diff_usec(&now, &prev) > timediffallowed )
+        now = gettime();
+        if ( diff_usec(prev, now) > timediffallowed )
         {
-            while ( tb_diff_usec(&now, &prev) < timediffallowed * 2) {
-                mftb(&now);
+            while ( diff_usec(prev, now) < timediffallowed * 2) {
+                now = gettime();
             }
 
             if ( IPPU.SkippedFrames < Settings.SkipFrames ) {
@@ -124,16 +127,16 @@ void S9xSyncSpeed()
             }
         } else {
             /*** Ahead - so hold up ***/
-            while ( tb_diff_usec(&now, &prev) < timediffallowed ) 
+            while ( diff_usec(prev, now) < timediffallowed ) 
             {
-                mftb(&now);
+	        now = gettime();
             }
 
             IPPU.RenderThisFrame = TRUE;
             IPPU.SkippedFrames = 0;
         }
 
-        memcpy(&prev, &now, sizeof(tb_t));
+	prev = now;
     }
 
     FrameTimer--;
@@ -290,11 +293,23 @@ void Emulate()
     /*** Sync ***/
     VIDEO_WaitVSync();
 
-    mftb(&prev);
+    prev = gettime();
     if ( Settings.PAL )
+    {
+        if(vmode_60hz == 1)
+	    timerstyle = 1;
+	else
+	    timerstyle = 0;
         timediffallowed = Settings.FrameTimePAL;
+    }
     else
+    {
+        if(vmode_60hz == 1)
+	    timerstyle = 0;
+	else
+	    timerstyle = 1;
         timediffallowed = Settings.FrameTimeNTSC;
+    }
 
     while (1)
     {
@@ -323,6 +338,8 @@ int main() {
     SYS_SetResetCallback(reset_cb);
     unpackanim();
     SDCARD_Init();
+
+    gecko_console_init(0);
 
     /*** Get Drive Type ***/
     dvd_inquiry();
