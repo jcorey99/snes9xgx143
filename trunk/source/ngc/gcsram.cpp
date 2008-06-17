@@ -4,19 +4,10 @@
  * All functions to save out the SRAM are in this module
  ****************************************************************************/
 #include <gccore.h>
-#include <sdcard.h>
 #include <zlib.h>
 #include <snes9x.h>
 #include <memmap.h>
 #include "saveicon.h"
-#ifdef HW_RVL
-#include "wiisd/tff.h"
-#include "wiisd/sdio.h"
-
-/*Front SCARD*/
-FATFS frontfs;
-
-#endif
 
 #define SNESDIR "snes9x"
 #define SAVEDIR "saves"
@@ -275,71 +266,20 @@ int SaveSRAMToSD (int slot, unsigned long datasize) {
 
     if (Memory.SRAMSize > 0){
         if ( datasize ) {
-            int res;
-            if (slot == 2) {
-#if HW_RVL
-                ShowAction((char*)"Saving SRAM to Wii SD...");
-                sprintf(filepath, "/%s/%s/%08X.srm", SNESDIR, SAVEDIR, Memory.ROMCRC32);
-                FIL fp;
-                u32 written;
-
-                /* Mount WiiSD */
-                if ((res = f_mount(0, &frontfs)) != FR_OK) {
-                    sprintf(msg, "f_mount failed, error %d", res);
-                    WaitPrompt(msg);
-                    f_mount(0,NULL);
-                    sd_deinit();
-                    return 1;
-                }
-                if ((res = f_open(&fp, filepath, FA_CREATE_ALWAYS | FA_WRITE)) != FR_OK) {
-                    sprintf(msg, "f_open failed, error %d", res);
-                    WaitPrompt(msg);
-                    f_mount(0,NULL);
-                    sd_deinit();
-                    return 1;
-                }
-                if ((res = f_write(&fp, savebuffer, datasize, &written)) != FR_OK) {
-                    sprintf(msg, "f_write failed, error %d", res);
-                    WaitPrompt(msg);
-                    f_close(&fp);
-                    f_mount(0,NULL);
-                    sd_deinit();
-                    return 1;
-                }
-                if (written == datasize) {
-                    sprintf(msg, "Saved %ld bytes.", datasize);
-                    ShowAction(msg);
-                    f_close(&fp);
-                    f_mount(0,NULL);
-                    sd_deinit();
-                    return 0;
-                } else {
-                    sprintf(msg, "Write size mismatch, %d of %ld bytes", written, datasize);
-                    WaitPrompt(msg);
-                }
-                sprintf(msg, "Unable to save %s", filepath);
-                WaitPrompt(msg);
-                f_close(&fp);
-                f_mount(0,NULL);
-                sd_deinit();
-                return 1;
-#endif
-            } else {
-                ShowAction((char*)"Saving SRAM to SD...");    
-                sprintf (filepath, "dev%d:\\%s\\%s\\%08X.srm", slot, SNESDIR, SAVEDIR, Memory.ROMCRC32);
-                sd_file *handle = SDCARD_OpenFile (filepath, "wb");
-                if (handle <= 0) {
-                    sprintf(msg, "Couldn't save %s", filepath);
-                    WaitPrompt (msg);
-                    return 0;
-                }
-                SDCARD_WriteFile (handle, savebuffer, datasize);
-                SDCARD_CloseFile (handle);
-
-                sprintf (filepath, "Saved %ld bytes.", datasize);
-                ShowAction(filepath);
-                return 1;
+            ShowAction((char*)"Saving SRAM to SD...");    
+            sprintf (filepath, "/%s/%s/%08X.srm", SNESDIR, SAVEDIR, Memory.ROMCRC32);
+            FILE *handle = fopen(filepath, "wb");
+            if (handle <= 0) {
+                sprintf(msg, "Couldn't save %s", filepath);
+                WaitPrompt (msg);
+                return 0;
             }
+            fwrite(savebuffer, 1, datasize, handle);
+            fclose(handle);
+
+            sprintf (filepath, "Saved %ld bytes.", datasize);
+            ShowAction(filepath);
+            return 1;
         } else return 0;
     } else {
         sprintf (filepath, "This ROM file has no battery");
@@ -358,94 +298,25 @@ int LoadSRAMFromSD (int slot) {
     int size = 0;
     char msg[1024];
 
-    if (slot == 2) {
-#ifdef HW_RVL
-        ShowAction((char*)"Loading SRAM from Wii SD...");    
-        sprintf(filepath, "/%s/%s/%08X.srm", SNESDIR, SAVEDIR, Memory.ROMCRC32);
-        FIL fp;
-        u32 bytes_read, bytes_read_total;
-        FILINFO finfo;
+    ShowAction((char*)"Loading SRAM from SD...");    
+    sprintf (filepath, "/%s/%s/%08x.srm", SNESDIR, SAVEDIR, Memory.ROMCRC32);
 
-        /* Mount WiiSD */
-        int res;
-        if ((res = f_mount(0, &frontfs)) != FR_OK) {
-            sprintf(msg, "f_mount failed, error %d", res);
-            WaitPrompt(msg);
-            f_mount(0,NULL);
-            sd_deinit();
-            return 0;
-        }
-        memset(&finfo, 0, sizeof(finfo));
-        res = f_stat(filepath, &finfo);
-        if(res != FR_OK) {
-            if (res == FR_NO_FILE) {
-                sprintf(msg, "Unable to find %s.", filepath);
-            }
-            else {
-                sprintf(msg, "f_stat failed, error %d", res);
-            }
-            WaitPrompt(msg);
-            f_mount(0,NULL);
-            sd_deinit();
-            return 0;
-        }
-        res = f_open(&fp, filepath, FA_READ);
-        if (res != FR_OK) {
-            sprintf(msg, "Failed to open %s, error %d.", filepath, res);
-            WaitPrompt(msg);
-            f_mount(0,NULL);
-            sd_deinit();
-            return 0;
-        }
+    FILE *handle;
+    int read = 0;
 
-        bytes_read = bytes_read_total = 0;
-        while(bytes_read_total < finfo.fsize) {
-            if (f_read(&fp, &savebuffer[bytes_read_total], 0x200, &bytes_read) != FR_OK) {
-                WaitPrompt((char*)"f_read failed");
-                f_close(&fp);
-                f_mount(0,NULL);
-                sd_deinit();
-                return 0;
-            }
-
-            if(bytes_read == 0)
-                break;
-            bytes_read_total += bytes_read;
-        }
-
-        if (bytes_read_total < finfo.fsize) {
-            WaitPrompt((char*)"read failed");
-            f_close(&fp);
-            f_mount(0,NULL);
-            sd_deinit();
-            return 0;
-        }
-
-        f_close(&fp);
-        f_mount(0,NULL);
-        sd_deinit();
-        offset = bytes_read_total;
-#endif
-    } else {
-        ShowAction((char*)"Loading SRAM from SD...");    
-        sprintf (filepath, "dev%d:\\%s\\%s\\%08x.srm", slot, SNESDIR, SAVEDIR, Memory.ROMCRC32);
-
-        sd_file *handle;
-        int read = 0;
-
-        handle = SDCARD_OpenFile (filepath, "rb");
-        if (handle <= 0) {        
-            sprintf(msg, "Couldn't open %s", filepath);
-            WaitPrompt (msg);       
-            return 0;
-        }
-
-        /*** This is really nice, just load the file and decode it ***/
-        while ((read = SDCARD_ReadFile (handle, &savebuffer[offset], 1024)) > 0){ 
-            offset += read;
-        }    
-        SDCARD_CloseFile (handle);
+    handle = fopen(filepath, "rb");
+    if (handle <= 0) {        
+        sprintf(msg, "Couldn't open %s", filepath);
+        WaitPrompt (msg);       
+        return 0;
     }
+
+    /*** This is really nice, just load the file and decode it ***/
+    while ((read = fread(&savebuffer[offset], 1, 1024, handle)) > 0){ 
+        offset += read;
+    }    
+    fclose(handle);
+
     if (offset > 0) {
         sprintf(msg, "Loaded %d bytes successfully", offset);
         ShowAction(msg);

@@ -17,8 +17,10 @@ include $(DEVKITPPC)/wii_rules
 #---------------------------------------------------------------------------------
 TARGET		:=	snesgxwi
 BUILD		:=	build
-SOURCES		:=	source/ngc source source/roms source/ngc/wiisd
-INCLUDES	:=	include source source/linux source/ngc/wiisd
+SOURCES		:=	source/ngc source source/roms 
+#source/ngc/wiisd
+INCLUDES	:=	include source source/linux 
+#source/ngc/wiisd
 # Specify language in all capitals
 # Supported languages: ENGLISH, SPANISH, GERMAN, DUTCH
 LANG		:=	ENGLISH
@@ -41,7 +43,7 @@ LDFLAGS	=	-g $(MACHDEP) -Wl,-Map,$(notdir $@).map -Wl,--cref
 #---------------------------------------------------------------------------------
 # any extra libraries we wish to link with the project
 #---------------------------------------------------------------------------------
-LIBS	:=	-logc -lm -lz -lsdcard
+LIBS	:=	-lfat -logc -lm -lz
 
 #---------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level containing

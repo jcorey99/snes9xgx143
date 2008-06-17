@@ -16,16 +16,8 @@
 #include <string.h>
 #include <zlib.h>
 #include "gcdvd.h"
-#include <sdcard.h>
 
-#ifdef HW_RVL
-#include "wiisd/vfat.h"
-extern VFATFS vfs;
-extern FSDIRENTRY vfsfile;
-extern int UseWiiSDCARD;
-#endif
-
-extern sd_file *filehandle;
+extern FILE *filehandle;
 extern int UseSDCARD;
 
 extern void ShowAction( char *msg );
@@ -165,10 +157,7 @@ int unzipDVDFile( unsigned char *outbuffer,
         zipchunk = ZIPCHUNK;
         discoffset += 2048;
         if ( UseSDCARD )
-            SDCARD_ReadFile(filehandle, &readbuffer, 2048);
-#ifdef HW_RVL
-            else if (UseWiiSDCARD) VFAT_fread(&vfsfile, &readbuffer, 2048);
-#endif
+            fread(readbuffer, 1, 2048, filehandle);
         else
             dvd_read(&readbuffer, 2048, discoffset);
 
@@ -176,10 +165,7 @@ int unzipDVDFile( unsigned char *outbuffer,
 
     inflateEnd(&zs);
 
-    if (UseSDCARD) SDCARD_CloseFile(filehandle);
-#ifdef HW_RVL
-    else if (UseWiiSDCARD) VFAT_fclose(&vfsfile);
-#endif
+    if (UseSDCARD) fclose(filehandle);
 
     if ( res == Z_STREAM_END ) {
         if ( FLIP32(pkzip.uncompressedSize == (u32)bufferoffset ) )

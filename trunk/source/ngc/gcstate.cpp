@@ -17,7 +17,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sdcard.h>
 #include <zlib.h>
 
 #include "gcstate.h"
@@ -26,12 +25,6 @@
 #include "soundux.h"
 #include "snapshot.h"
 #include "srtc.h"
-#ifdef HW_RVL
-#include "wiisd/tff.h"
-#include "wiisd/integer.h"
-#include "wiisd/sdio.h"
-extern FATFS frontfs;
-#endif
 
 #include "gcconfig.h"
 
@@ -340,7 +333,7 @@ int NGCUnFreezeBlock (char *name, uint8 * block, int size){
  */
 int NGCFreezeGame (int device, int slot) {
     char filename[1024];
-    sd_file *handle;
+    FILE *handle;
     unsigned int len = 0;
     u32 offset = 0;
     char msg[100];
@@ -390,95 +383,24 @@ int NGCFreezeGame (int device, int slot) {
     offset += zippedsize;
 
     if (device == 1) { /*** SDCard slot ***/
-        if (slot < 2) {
-            sprintf (filename, "dev%d:\\%s\\%s\\%08X.snz", slot, SNESDIR, SAVEDIR, Memory.ROMCRC32);
+        sprintf (filename, "/%s/%s/%08X.snz", SNESDIR, SAVEDIR, Memory.ROMCRC32);
 
-            handle = SDCARD_OpenFile (filename, "wb");
-            if (handle > 0) {
-                ShowAction((char*)"Saving state game in SDCARD ...");
+        handle = fopen(filename, "wb");
+        if (handle > 0) {
+            ShowAction((char*)"Saving state game in SDCARD ...");
 
-                len = SDCARD_WriteFile (handle, savebuffer, offset);
-                SDCARD_CloseFile (handle);
+            len = fwrite(savebuffer, 1, offset, handle);
+            fclose(handle);
 
-                if (len != offset)
-                    WaitPrompt((char*)"Error writing state file");
-                else {
-                    sprintf (filename, "Saved %d bytes successfully", offset);
-                    ShowAction(filename);
-                }
-            } else {
-                sprintf(msg, "Couldn't save to %s", filename);
-                WaitPrompt (msg);
+            if (len != offset)
+                WaitPrompt((char*)"Error writing state file");
+            else {
+                sprintf (filename, "Saved %d bytes successfully", offset);
+                ShowAction(filename);
             }
-        } else { // WiiSD
-#ifdef HW_RVL
-            ShowAction((char*)"Saving STATE to Wii SD...");
-            sprintf(filename, "/%s/%s/%08X.snz", SNESDIR, SAVEDIR, Memory.ROMCRC32);
-            FIL fp;
-            u32 written = 0, total_written = 0, datasize = offset;
-            int res;
-
-            /* Mount WiiSD */
-            if ((res = f_mount(0, &frontfs)) != FR_OK) {
-                sprintf(msg, "f_mount failed, error %d", res);
-                WaitPrompt(msg);
-                f_mount(0,NULL);
-                sd_deinit();
-                return 1;
-            }
-            if ((res = f_open(&fp, filename, FA_CREATE_ALWAYS | FA_WRITE)) != FR_OK) {
-                sprintf(msg, "f_open failed, error %d", res);
-                WaitPrompt(msg);
-                f_mount(0,NULL);
-                sd_deinit();
-                return 1;
-            }
-            sprintf(msg, "Writing %d bytes..", datasize);
-            WaitPrompt(msg);
-            // Can only write 64k at a time
-            while (offset > 65000) {
-                if ((res = f_write(&fp, &savebuffer[total_written], 65000, &written)) != FR_OK) {
-                    sprintf(msg, "f_write failed, error %d", res);
-                    WaitPrompt(msg);
-                    f_close(&fp);
-                    f_mount(0,NULL);
-                    sd_deinit();
-                    return 1;
-                }
-                offset -= written;
-                total_written += written;
-            }
-            // Write last 64k
-            if ((res = f_write(&fp, savebuffer+total_written, offset, &written)) != FR_OK) {
-                sprintf(msg, "f_write failed, error %d", res);
-                WaitPrompt(msg);
-                f_close(&fp);
-                f_mount(0,NULL);
-                sd_deinit();
-                return 1;
-            }
-            offset -= written;
-            total_written += written;
-            sprintf(msg, "Wrote %d of %d bytes", total_written, datasize);
-            ShowAction(msg);
-            if (total_written == datasize) {
-                sprintf(msg, "Saved %d bytes successfully.", written);
-                ShowAction(msg);
-                f_close(&fp);
-                f_mount(0,NULL);
-                sd_deinit();
-                return 0;
-            }
-
-            sprintf(msg, "Write size mismatch, %d of %d bytes", written, datasize);
-            WaitPrompt(msg);
-            sprintf(msg, "Unable to save %s", filename);
-            WaitPrompt(msg);
-            f_close(&fp);
-            f_mount(0,NULL);
-            sd_deinit();
-            return 1;
-#endif
+        } else {
+            sprintf(msg, "Couldn't save to %s", filename);
+            WaitPrompt (msg);
         }
     } else { /*** MC in slot ***/
         ShowAction((char*)"Saving STATE game in MCARD ..."); 
@@ -502,7 +424,7 @@ int NGCFreezeGame (int device, int slot) {
 int NGCUnfreezeGame (int device, int slot)
 {
     char filename[1024];
-    sd_file *handle;
+    FILE *handle;
     int read = 0;
     int offset = 0;
     char msg[80];
@@ -517,90 +439,21 @@ int NGCUnfreezeGame (int device, int slot)
     //memset(savebuffer, 0, 0x22000);
 
     if (device == 1) { /*** Load state from SDCARD ***/
-        if (slot < 2) {
-            sprintf (filename, "dev%d:\\%s\\%s\\%08X.snz", slot, SNESDIR, SAVEDIR, Memory.ROMCRC32);
+        sprintf (filename, "/%s/%s/%08X.snz", SNESDIR, SAVEDIR, Memory.ROMCRC32);
 
-            handle = SDCARD_OpenFile (filename, "rb");
-            if (handle > 0) {
-                ShowAction((char*)"Loading STATE file...");
+        handle = fopen(filename, "rb");
+        if (handle > 0) {
+            ShowAction((char*)"Loading STATE file...");
 
-                offset = 0;
-                while ((read = SDCARD_ReadFile (handle, savebuffer+offset, 2048)) > 0) {
-                    offset += read;
-                }
-                SDCARD_CloseFile (handle);
-                if (offset == 0) return 0;
-            } else {
-                WaitPrompt((char*)"No STATE file found");
-                return 0;
+            offset = 0;
+            while ((read = fread(&savebuffer[offset], 1, 2048, handle)) > 0) {
+                offset += read;
             }
-        } else { // WiiSD
-#ifdef HW_RVL
-            ShowAction((char*)"Loading STATE file from Wii SD...");    
-            sprintf(filename, "/%s/%s/%08X.snz", SNESDIR, SAVEDIR, Memory.ROMCRC32);
-            FIL fp;
-            u32 bytes_read, bytes_read_total;
-            FILINFO finfo;
-
-            int res;
-            memset(&finfo, 0, sizeof(finfo));
-            /* Mount WiiSD */
-            if ((res = f_mount(0, &frontfs)) != FR_OK) {
-                sprintf(msg, "f_mount failed, error %d", res);
-                WaitPrompt(msg);
-                f_mount(0,NULL);
-                sd_deinit();
-                return 0;
-            }
-            if ((res=f_stat(filename, &finfo)) != FR_OK) {
-                if (res == FR_NO_FILE) {
-                    sprintf(msg, "Unable to find %s.", filename);
-                }
-                else {
-                    sprintf(msg, "f_stat failed, error %d", res);
-                }
-                WaitPrompt(msg);
-                f_mount(0,NULL);
-                sd_deinit();
-                return 0;
-            }
-            if ((res=f_open(&fp, filename, FA_READ)) != FR_OK) {
-                sprintf(msg, "Failed to open %s, error %d.", filename, res);
-                WaitPrompt(msg);
-                f_mount(0,NULL);
-                sd_deinit();
-                return 0;
-            }
-
-            bytes_read = bytes_read_total = 0;
-            while(bytes_read_total < finfo.fsize) {
-                if (f_read(&fp, &savebuffer[bytes_read_total], 0x200, &bytes_read) != FR_OK) {
-                    WaitPrompt((char*)"f_read failed");
-                    f_close(&fp);
-                    f_mount(0,NULL);
-                    sd_deinit();
-                    return 0;
-                }
-
-                if (bytes_read == 0)
-                    break;
-                bytes_read_total += bytes_read;
-            }
-
-            if (bytes_read_total < finfo.fsize) {
-                WaitPrompt((char*)"read failed");
-                f_close(&fp);
-                f_mount(0,NULL);
-                sd_deinit();
-                return 0;
-            }
-            sprintf(msg, "Read %d of %ld bytes.", bytes_read_total, finfo.fsize);
-            ShowAction(msg);
-            f_close(&fp);
-            f_mount(0,NULL);
-            sd_deinit();
-            offset = bytes_read_total;
-#endif
+            fclose(handle);
+            if (offset == 0) return 0;
+        } else {
+            WaitPrompt((char*)"No STATE file found");
+            return 0;
         }
     } else { /*** Load state from MCARD ***/
         sprintf (filename, "%s.snz", Memory.ROMName);

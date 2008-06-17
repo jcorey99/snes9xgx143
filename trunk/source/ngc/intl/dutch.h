@@ -18,7 +18,7 @@
 #define MENU_MAIN_INFO          "ROM Informatie"
 #define MENU_MAIN_JOYPADS       "Instellingen Controllers"
 #define MENU_MAIN_OPTIONS       "Emulator Opties"
-#ifdef HW_RVL
+#ifdef __wii__
 #define MENU_MAIN_RELOAD        "TP Herladen"
 #define MENU_MAIN_REBOOT        "Herstart Wii"
 #else

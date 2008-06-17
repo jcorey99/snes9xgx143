@@ -18,7 +18,7 @@
 #define MENU_MAIN_INFO          "Informacion ROM"
 #define MENU_MAIN_JOYPADS       "Config. Controles"
 #define MENU_MAIN_OPTIONS       "Opciones Emulador"
-#ifdef HW_RVL
+#ifdef __wii__
 #define MENU_MAIN_RELOAD        "Reiniciar Cargador"
 #define MENU_MAIN_REBOOT        "Reiniciar Wii"
 #else
