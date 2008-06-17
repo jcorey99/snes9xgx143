@@ -7,7 +7,7 @@
  ****************************************************************************/
 
 #include <gccore.h>
-#include <sdcard.h>
+#include <fat.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -29,7 +29,7 @@
 #include "port.h"
 #include "gcconfig.h"
 #include "gctime.h"
-#include "gecko_console.h"
+//#include <gecko_console.h>
 
 uint32 screen_width = 0;
 uint32 screen_height = 0;
@@ -337,9 +337,9 @@ int main() {
     InitGCVideo();
     SYS_SetResetCallback(reset_cb);
     unpackanim();
-    SDCARD_Init();
+    fatInitDefault();
 
-    gecko_console_init(0);
+    //gecko_console_init(0);
 
     /*** Get Drive Type ***/
     dvd_inquiry();

@@ -10,7 +10,9 @@
 #include <snes9x.h>
 #include <soundux.h>
 #include <ogc/ipc.h>
+#include <wiiuse/wpad.h>
 #include "gcstate.h"
+//#include "gc_sys_lang.h"
 #include "iplfont.h"
 #include "intl.h"
 
@@ -27,9 +29,6 @@ extern void AnimFrame();
 extern int SaveTheSRAM( int mode, int slot, int type);
 extern int OpenDVD();
 extern int OpenSD();
-#ifdef HW_RVL
-extern int OpenWiiSD();
-#endif
 extern void dvd_motor_off();
 extern void uselessinquiry ();
 extern int timerstyle;
@@ -39,7 +38,6 @@ extern int showspinner;
 extern int showcontroller;
 
 extern int UseSDCARD;
-extern int UseWiiSDCARD;
 extern int allowupdown;
 
 extern unsigned char isWii;
@@ -51,7 +49,7 @@ void SetScreen();
 void ClearScreen();
 
 void Reboot() {
-#ifdef HW_RVL
+#ifdef __wii__
     // Thanks to eke-eke
     SYS_ResetSystem(SYS_RETURNTOMENU, 0, 0);
 #else
@@ -533,7 +531,7 @@ void SaveMenu(int SaveType) { // 0=SRAM, 1=STATE
 
     showspinner = 1;
     // Limit GC mode to just two slots
-#ifndef HW_RVL
+#ifndef __wii__
     SdSlotCount = 2;
 #endif
 
@@ -804,7 +802,11 @@ int MediaSelect() {
     int MediaMenuCount = 5;
     char MediaMenu[5][MENU_STRING_LENGTH] = { 
         { MENU_MEDIA_SDCARD },
+		#ifdef __wii__
         { "SDCard: Wii SD" },
+		#else
+		{ "SDCard: Slot A" },
+		#endif
         { MENU_MEDIA_DVD },
         { MENU_MEDIA_STOPDVD },
         { MENU_EXIT }
@@ -819,7 +821,7 @@ int MediaSelect() {
     short j;
     int redraw = 1;
 
-#ifdef HW_RVL
+#ifdef __wii__
     strcpy(MediaMenu[MEDIA_DVD], MediaMenu[MEDIA_EXIT]);
     MediaMenuCount = 3;
 #else
@@ -829,7 +831,6 @@ int MediaSelect() {
     while ( quit == 0 ) {
         // TODO: straighten out haveSDdir vs haveWiiSDdir
         haveSDdir = 0;
-        haveWiiSDdir = 0;
         if ( redraw ) {
             sprintf(MediaMenu[MEDIA_SLOT], "SDCard: %s", SdSlots[ChosenSlot]);
             DrawMenu((char*)MENU_MEDIA_TITLE, MediaMenu, MediaMenuCount, ChosenMenu);
@@ -851,12 +852,7 @@ int MediaSelect() {
             redraw = 1;
             switch ( ChosenMenu ) {
                 case MEDIA_SDCARD:
-#ifdef HW_RVL
-                        if (ChosenSlot == 2) {
-                            OpenWiiSD();
-                        } else
-#endif
-                            OpenSD();
+                        OpenSD();
                         return 1;
                         break;
                 case MEDIA_SLOT:
@@ -866,25 +862,26 @@ int MediaSelect() {
                         redraw = 1;
                         break;
                 case MEDIA_DVD: 
-#ifdef HW_RVL
+#ifdef __wii__
                         // In Wii mode, this is just exit
                         quit = 1;
 #else
                         UseSDCARD = 0;
-                        UseWiiSDCARD = 0;
                         OpenDVD();
                         return 1;
 #endif
                         break;
-#ifndef HW_RVL
+#ifndef __wii__
                 case MEDIA_STOPDVD:
                         ShowAction((char*)MENU_MEDIA_STOPPING);
                         dvd_motor_off();
                         WaitPrompt((char*)MENU_MEDIA_STOPPED);
+						break;
+#endif
                 case MEDIA_EXIT:
                         quit = 1;
                         break;
-#endif
+
                 default: break ;
             }
         }

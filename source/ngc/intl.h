@@ -11,6 +11,8 @@
 #include "intl/german.h"
 #elif defined INTL_DUTCH
 #include "intl/dutch.h"
+#elif defined INTL_FRENCH
+#include "intl/french.h"
 #else
 #include "intl/english.h"
 #endif
