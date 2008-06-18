@@ -520,7 +520,6 @@ int parseSDdirectory() {
 	if (sddir == NULL) {
         strcpy(rootSDdir, "fat:/");
         sddir = diropen(rootSDdir);
-        WaitPrompt(msg);
         if (sddir == NULL) {
             sprintf(msg, "Error opening %s", rootSDdir);
             WaitPrompt(msg);
