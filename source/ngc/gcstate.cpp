@@ -95,7 +95,7 @@ int LoadBufferFromMC (unsigned char *buf, int slot, char *filename)
 		if (blocks % SectorSize)
 			blocks += SectorSize;
 		
-		memset (buf, 0, 0x22000);
+		memset (buf, 0, SAVEBUFFERSIZE);
 		
 		bytesleft = blocks;
 		bytesread = 0;
@@ -351,7 +351,7 @@ int NGCFreezeGame (int device, int slot) {
     //S9xPrepareSoundForSnapshotSave (TRUE);
     //S9xSetSoundMute (FALSE);
 
-    memset(savebuffer, 0, 0x22000);
+    memset(savebuffer, 0, SAVEBUFFERSIZE);
 
     /*** Copy in save icon ***/
     offset = sizeof (saveicon);
@@ -436,7 +436,7 @@ int NGCUnfreezeGame (int device, int slot)
 
     bufoffset = 0;
 
-    //memset(savebuffer, 0, 0x22000);
+    //memset(savebuffer, 0, SAVEBUFFERSIZE);
 
     if (device == 1) { /*** Load state from SDCARD ***/
         sprintf (filename, "/%s/%s/%08X.snz", SNESDIR, SAVEDIR, Memory.ROMCRC32);
