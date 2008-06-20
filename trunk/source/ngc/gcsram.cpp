@@ -29,14 +29,6 @@ extern u8 mpads[4];
 
 void uselessinquiry ();
 
-/****************************************************************************
- * Clear the savebuffer
- ****************************************************************************/
-void ClearSaveBuffer ()
-{
-    memset (savebuffer, 0, SAVEBUFFERSIZE);
-}
-
 int MountTheCard(int slot)
 {
     int tries = 0;
