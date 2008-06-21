@@ -15,8 +15,8 @@ include $(DEVKITPPC)/gamecube_rules
 # SOURCES is a list of directories containing source code
 # INCLUDES is a list of directories containing extra header files
 #---------------------------------------------------------------------------------
-TARGET		:=	snesgxgc
-BUILD		:=	build
+TARGET		:=	snesgx
+BUILD		:=	build_gc
 SOURCES		:=	source/ngc source source/roms
 INCLUDES	:=	include source source/linux
 
@@ -37,7 +37,7 @@ LDFLAGS	=	-g $(MACHDEP) -Wl,-Map,$(notdir $@).map -Wl,--cref
 #---------------------------------------------------------------------------------
 # any extra libraries we wish to link with the project
 #---------------------------------------------------------------------------------
-LIBS	:=	-logc -lm -lz -lsdcard
+LIBS	:=	-lfat -logc -lm -lz
 
 #---------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level containing

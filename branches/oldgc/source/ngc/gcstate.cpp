@@ -17,7 +17,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sdcard.h>
 #include <zlib.h>
 
 #include "gcstate.h"
@@ -27,21 +26,10 @@
 #include "snapshot.h"
 #include "srtc.h"
 
-//#include "Snes9xGx.h"
-//#include "filesel.h"
-//#include "ftfont.h"
-//#include "smbload.h"
-//#include "mcsave.h"
-//#include "saveicon.h"
-
-/*extern "C"
-{
-#include "smb.h"
-}*/
-
 #include "gcconfig.h"
 
-#define SNESSAVEDIR "snes9x\\saves" 
+#define SNESDIR "snes9x"
+#define SAVEDIR "saves" 
 #define SAVEBUFFERSIZE 0x30000
 #define MEMBUFFER (512 * 1024)
 
@@ -63,7 +51,7 @@ extern card_stat CardStatus;
 static int bufoffset;
 static char membuffer[MEMBUFFER];
 
-char freezecomment[2][32] = { {"Snes9x 1.43GX011 Freeze"}, {"Freeze"} };
+char freezecomment[2][32] = { {"Snes9x 1.43GX012 Freeze"}, {"Freeze"} };
 
 /****************************************************************************
  * Load savebuffer from Memory Card file
@@ -165,7 +153,7 @@ int SaveBufferToMC (unsigned char *buf, int slot, char *filename, int datasize)
 				if (CardError)
 				{
                     CARD_Unmount (slot);
-					WaitPrompt ("Unable to open card file!");
+					WaitPrompt ((char*)"Unable to open card file!");
 					return 0;
 				}
 				
@@ -178,7 +166,7 @@ int SaveBufferToMC (unsigned char *buf, int slot, char *filename, int datasize)
                     if (CardError)
                     {
                         CARD_Unmount (slot);
-                        WaitPrompt ("Not enough space to update file!");
+                        WaitPrompt ((char*)"Not enough space to update file!");
                         return 0;
                     }
                     
@@ -188,7 +176,7 @@ int SaveBufferToMC (unsigned char *buf, int slot, char *filename, int datasize)
                     if (CardError)
                     {
                         CARD_Unmount (slot);
-                        WaitPrompt ("Unable to delete temporary file!");
+                        WaitPrompt ((char*)"Unable to delete temporary file!");
                         return 0;
                     }
                     
@@ -197,7 +185,7 @@ int SaveBufferToMC (unsigned char *buf, int slot, char *filename, int datasize)
                     if (CardError)
                     {
                         CARD_Unmount (slot);
-                        WaitPrompt ("Unable to delete existing file!");
+                        WaitPrompt ((char*)"Unable to delete existing file!");
                         return 0;
                     }
                     
@@ -206,7 +194,7 @@ int SaveBufferToMC (unsigned char *buf, int slot, char *filename, int datasize)
                     if (CardError)
                     {
                         CARD_Unmount (slot);
-                        WaitPrompt ("Unable to create updated card file!");
+                        WaitPrompt ((char*)"Unable to create updated card file!");
                         return 0;
                     }
 				}
@@ -219,9 +207,9 @@ int SaveBufferToMC (unsigned char *buf, int slot, char *filename, int datasize)
                 {
                     CARD_Unmount (slot);
                     if ( CardError = CARD_ERROR_INSSPACE )
-                        WaitPrompt ("Not enough space to create file!");
+                        WaitPrompt ((char*)"Not enough space to create file!");
                     else
-                        WaitPrompt ("Unable to create card file!");
+                        WaitPrompt ((char*)"Unable to create card file!");
                     return 0;
                 }
             }
@@ -249,7 +237,7 @@ int SaveBufferToMC (unsigned char *buf, int slot, char *filename, int datasize)
             return byteswritten;
 		}
 		else
-			WaitPrompt ("This game does not appear to use SRAM");
+			WaitPrompt ((char*)"This game does not appear to use SRAM");
 	}
 	else{
 		sprintf(msg, "Unable to Mount MCARD Slot %s!", (slot == CARD_SLOTA) ? "A" : "B");
@@ -355,16 +343,16 @@ int NGCUnFreezeBlock (char *name, uint8 * block, int size){
 int NGCFreezeGame (int device, int slot)
 {
     char filename[1024];
-    sd_file *handle;
-    int len = 0;
-    int wrote = 0;
-    int offset = 0;
+    FILE *handle;
+    uLongf len = 0;
+    //int wrote = 0;
+    uLongf offset = 0;
     char msg[100];
     unsigned long outBytes = 0;
 	unsigned long zippedsize = 0;
 	unsigned long decompressedsize = 0;
 	int err = 0;
-	int ret = 0;
+	//int ret = 0;
 	
     //S9xSetSoundMute (TRUE);
     //S9xPrepareSoundForSnapshotSave (FALSE);
@@ -386,21 +374,20 @@ int NGCFreezeGame (int device, int slot)
     offset += 64;
 	
 	/*** Zip and copy in the freeze ***/
-	outBytes = (uLongf) 0x22000;
+	outBytes = (uLongf) SAVEBUFFERSIZE;
 	err = compress2((Bytef*)(savebuffer+offset+8), (uLongf*)&outBytes, (const Bytef *)membuffer, (uLongf)bufoffset, Z_BEST_COMPRESSION);
 
-	if(err != Z_OK)
-	{
+	if(err != Z_OK){
 		sprintf (msg, "zip error %s ",zError(err));
 		WaitPrompt (msg);
 		return 0;
 	}
 
-	zippedsize = (int)outBytes;
+	zippedsize = (uLongf)outBytes;
 	memcpy (savebuffer+offset, &zippedsize, 4);
 	offset += 4;
 	
-	decompressedsize = (int)bufoffset;
+	decompressedsize = (uLongf)bufoffset;
 	memcpy (savebuffer+offset, &decompressedsize, 4);
 	offset += 4;
 
@@ -408,43 +395,38 @@ int NGCFreezeGame (int device, int slot)
     
     if (device == 1)  /*** SDCard slot ***/
     {
-		sprintf (filename, "dev%d:\\%s\\%08x.snz", slot, SNESSAVEDIR, Memory.ROMCRC32);
+        sprintf (filename, "/%s/%s/%08X.snz", SNESDIR, SAVEDIR, Memory.ROMCRC32);
 		
-        handle = SDCARD_OpenFile (filename, "wb");
-        
-        if (handle > 0)
-        {
-            ShowAction ("Saving state game in SDCARD ...");
+        handle = fopen(filename, "wb");        
+        if (handle > 0){
+            ShowAction ((char*)"Saving state game in SDCARD ...");
 			
-            len = SDCARD_WriteFile (handle, savebuffer, offset);
-            SDCARD_CloseFile (handle);
+            len = fwrite(savebuffer, 1, offset, handle);
+            fclose(handle);
 
             if (len != offset)
-                WaitPrompt ("Error writing state file");
+                WaitPrompt ((char*)"Error writing state file");
             else
             {
-                sprintf (filename, "Saved %d bytes successfully", offset);
+                sprintf (filename, "Saved %ld bytes successfully", offset);
                 WaitPrompt (filename);
             }   
         }
-        else
-        {
-            sprintf(msg, "Couldn't save to dev%d:\\%s\\", slot, SNESSAVEDIR);
+        else {
+            sprintf(msg, "Couldn't save to %s", filename);
             WaitPrompt (msg);
         }
     }
     else  /*** MC in slot ***/
     {
-        ShowAction ("Saving STATE game in MCARD ..."); 
-		
-        sprintf (filename, "%s.snz", Memory.ROMName);
-		
-        ret = SaveBufferToMC ( savebuffer, slot, filename, offset );
+        ShowAction((char*)"Saving STATE game in MCARD ..."); 
 
-        if ( ret )
-        {
-            sprintf (filename, "Saved %d bytes successfully", ret);
-            WaitPrompt (filename);
+        sprintf (filename, "%s.snz", Memory.ROMName);
+        offset = SaveBufferToMC ( savebuffer, slot, filename, offset );
+
+        if ( offset ) {
+            sprintf(filename, "Saved %ld bytes successfully", offset);
+            ShowAction(filename);
         }
     }
     
@@ -458,47 +440,42 @@ int NGCFreezeGame (int device, int slot)
 int NGCUnfreezeGame (int device, int slot)
 {
     char filename[1024];
-    sd_file *handle;
+    FILE *handle;
     int read = 0;
-    int offset = 0;
+    uLongf offset = 0;
     char msg[80];
 	
 	unsigned long zipsize = 0;
     unsigned long decompressedsize = 0;
 	unsigned long outBytes = 0;
 	int err = 0;
-	int ret = 0;
+	//int ret = 0;
     
     bufoffset = 0;
-    
-    if (device == 1)  /*** Load state from SDCARD ***/
-    {
-		sprintf (filename, "dev%d:\\%s\\%08x.snz", slot, SNESSAVEDIR, Memory.ROMCRC32);
-		
-        handle = SDCARD_OpenFile (filename, "rb");
-        
-        if (handle > 0)
-        {
-            ShowAction ("Loading STATE file...");
-			
+
+    if (device == 1){  /*** Load state from SDCARD ***/
+        sprintf (filename, "/%s/%s/%08X.snz", SNESDIR, SAVEDIR, Memory.ROMCRC32);
+
+        handle = fopen(filename, "rb");
+        if (handle > 0){
+            ShowAction ((char*)"Loading STATE file...");
+
             offset = 0;
-            while ((read = SDCARD_ReadFile (handle, savebuffer+offset, 2048)) > 0){
+            while ((read = fread(&savebuffer[offset], 1, 2048, handle)) > 0) {
                 offset += read;
             }
-            SDCARD_CloseFile (handle);
-			if (offset == 0) return 0;
+            fclose(handle);
+            if (offset == 0) return 0;
         }
         else{
-            WaitPrompt ("No STATE file found");
+            WaitPrompt ((char*)"No STATE file found");
             return 0;
         }
     }
-    else       /*** Load state from MCARD ***/
-    {
-	    sprintf (filename, "%s.snz", Memory.ROMName);
-		
-        ShowAction ("Loading STATE file from MCARD...");
-        
+    else{      /*** Load state from MCARD ***/
+        sprintf (filename, "%s.snz", Memory.ROMName);
+        ShowAction((char*)"Loading STATE file from MCARD...");
+
         offset = LoadBufferFromMC (savebuffer, slot, filename);
         if ( offset == 0) return 0;
     }
@@ -519,28 +496,25 @@ int NGCUnfreezeGame (int device, int slot)
     outBytes = MEMBUFFER;
     err = uncompress((Bytef *)membuffer, (uLongf*)&outBytes, (const Bytef *)(savebuffer+offset), zipsize);
 
-    if (err != Z_OK)
-    {
+    if (err != Z_OK){
         sprintf (msg, "Unzip error %s ",zError(err));
         WaitPrompt (msg);
         return 0;
     }
 
-    if (outBytes != decompressedsize)
-    {
-        WaitPrompt ("Unzipped size doesn't match expected size!");
+    if (outBytes != decompressedsize){
+        WaitPrompt ((char*)"Unzipped size doesn't match expected size!");
         return 0;
     }
 	
-    if (S9xUnfreezeGame ("AGAME") != SUCCESS)
-    {
-        WaitPrompt ("Error thawing");
+    if (S9xUnfreezeGame ("AGAME") != SUCCESS){
+        WaitPrompt ((char*)"Error thawing");
         return 0;
     }
 	else{
 		S9xSetSoundMute (TRUE); //To avoid sound glitch
 		
-		sprintf (msg, "Loaded %d bytes successfully", zipsize);
+		sprintf (msg, "Loaded %ld bytes successfully", zipsize);
 		WaitPrompt (msg);
 	}
     

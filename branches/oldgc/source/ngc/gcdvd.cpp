@@ -9,8 +9,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sdcard.h>
 #include <memmap.h>
+#include <sys/dir.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #include "gcconfig.h"
 
 /*** Simplified Directory Entry Record I only care about a couple of values ***/
@@ -27,10 +29,14 @@
 #define PAGESIZE 15
 extern int PADCAL;
 
+#define SNESDIR "snes9x"
+#define SAVEDIR "saves"
+#define ROMSDIR "roms"
+
 /* SDCARD reading & browsing */
 int UseSDCARD = 0;
-sd_file * filehandle;
-char rootSDdir[SDCARD_MAX_PATH_LEN];
+FILE * filehandle;
+char rootSDdir[MAXPATHLEN];
 int haveSDdir = 0;
 
 /* File selection */
@@ -78,6 +84,7 @@ extern int autoSaveLoad;
 
 void dvd_inquiry()
 {
+
     dvd[0] = 0x2e;
     dvd[1] = 0;
     dvd[2] = 0x12000000;
@@ -102,6 +109,7 @@ void dvd_inquiry()
  ****************************************************************************/
 void uselessinquiry ()
 {
+
     dvd[0] = 0;
     dvd[1] = 0;
     dvd[2] = 0x12000000;
@@ -154,6 +162,7 @@ void dvd_extension()
 
 void dvd_motor_on_extra()
 {
+
     dvd[0] = 0x2e;
     dvd[1] = 0;
     dvd[2] = 0xfe110000 | DEBUG_START_DRIVE | DEBUG_ACCEPT_COPY | DEBUG_DISC_CHECK;
@@ -163,6 +172,7 @@ void dvd_motor_on_extra()
     dvd[6] = 0;
     dvd[7] = 1;
     while ( dvd[7] & 1 );
+
 }
 
 void dvd_motor_off( )
@@ -403,6 +413,7 @@ int getfiles( int filecount ) {
     return 0;
 }
 
+ #ifdef __gamecube__
 /****************************************************************************
  * ParseDirectory
  *
@@ -440,6 +451,34 @@ int parsedir()
     }
     return filecount;
 }
+#endif
+
+/***************************************************************************
+* FileSortCallback
+*
+* Quick sort callback to sort file entries with the following order:
+*  .
+*  ..
+*  <dirs>
+*  <files>
+***************************************************************************/
+static int FileSortCallback(const void *f1, const void *f2)
+{
+	/* Special case for implicit directories */
+	if(((FILEENTRIES *)f1)->filename[0] == '.' || ((FILEENTRIES *)f2)->filename[0] == '.')
+	{
+		if(strcmp(((FILEENTRIES *)f1)->filename, ".") == 0) { return -1; }
+		if(strcmp(((FILEENTRIES *)f2)->filename, ".") == 0) { return 1; }
+		if(strcmp(((FILEENTRIES *)f1)->filename, "..") == 0) { return -1; }
+		if(strcmp(((FILEENTRIES *)f2)->filename, "..") == 0) { return 1; }
+	}
+   
+	/* If one is a file and one is a directory the directory is first. */
+	if(((FILEENTRIES *)f1)->flags == 1 && ((FILEENTRIES *)f2)->flags == 0) return -1;
+	if(((FILEENTRIES *)f1)->flags == 0 && ((FILEENTRIES *)f2)->flags == 1) return 1;
+   
+	return stricmp(((FILEENTRIES *)f1)->filename, ((FILEENTRIES *)f2)->filename);
+}
 
 /***************************************************************************
  * Update SDCARD curent directory name 
@@ -454,15 +493,13 @@ int updateSDdirname()
     if (strcmp(filelist[selection].filename,".") == 0) return 0; 
 
     /* go up to parent directory */
-    else if (strcmp(filelist[selection].filename,"..") == 0) 
-    {
+    else if (strcmp(filelist[selection].filename,"..") == 0) {
         /* determine last subdirectory namelength */
         sprintf(temp,"%s",rootSDdir);
-        test= strtok(temp,"\\");
-        while (test != NULL)
-        { 
+        test= strtok(temp,"/");
+        while (test != NULL) { 
             size = strlen(test);
-            test = strtok(NULL,"\\");
+            test = strtok(NULL,"/");
         }
 
         /* remove last subdirectory name */
@@ -470,20 +507,21 @@ int updateSDdirname()
         rootSDdir[size] = 0;
 
         /* handles root name */
-        if (strcmp(rootSDdir, sdslot ? "dev1:":"dev0:") == 0)sprintf(rootSDdir,"dev%d:\\snes9x\\..", sdslot); 
+        if (strcmp(rootSDdir, "/") == 0)
+            sprintf(rootSDdir,"fat:/");
 
         return 1;
-    }
-    else
-    {
+    } else {
         /* test new directory namelength */
-        if ((strlen(rootSDdir)+1+strlen(filelist[selection].filename)) < SDCARD_MAX_PATH_LEN) 
+        if ((strlen(rootSDdir)+1+strlen(filelist[selection].filename)) < MAXPATHLEN) 
         {
             /* handles root name */
-            if (strcmp(rootSDdir, sdslot ? "dev1:\\snes9x\\.." : "dev0:\\snes9x\\..") == 0) sprintf(rootSDdir,"dev%d:",sdslot);
+            sprintf(temp, "/%s/..", SNESDIR);
+            if (strcmp(rootSDdir, temp) == 0) 
+                sprintf(rootSDdir,"fat:/");
 
             /* update current directory name */
-            sprintf(rootSDdir, "%s\\%s",rootSDdir, filelist[selection].filename);
+            sprintf(rootSDdir, "%s/%s",rootSDdir, filelist[selection].filename);
             return 1;
         }
         else
@@ -499,38 +537,43 @@ int updateSDdirname()
  ***************************************************************************/ 
 int parseSDdirectory()
 {
-    int entries = 0;
-    int nbfiles = 0;
     int numstored = 0;
-    DIR *sddir = NULL;
-
+    DIR_ITER *sddir;
+    char filename[MAXPATHLEN];
+    struct stat filestat;
+    
     /* initialize selection */
     selection = offset = 0;
 
-    /* Get a list of files from the actual root directory */ 
-    entries = SDCARD_ReadDir (rootSDdir, &sddir);
-
-    if (entries < 0) entries = 0;   
-    if (entries > MAXFILES) entries = MAXFILES;
-
-    /* Move to DVD structure - this is required for the file selector */ 
-    while (entries)
-    {
-        if (strcmp((const char*)sddir[nbfiles].fname, ".") != 0) { // Skip "." directory
-            memset (&filelist[numstored], 0, sizeof (FILEENTRIES));
-            strncpy(filelist[numstored].filename,(const char*)sddir[nbfiles].fname,MAXJOLIET);
-            filelist[numstored].filename[MAXJOLIET-1] = 0;
-            filelist[numstored].length = sddir[nbfiles].fsize;
-            filelist[numstored].flags = (char)(sddir[nbfiles].fattr & SDCARD_ATTR_DIR);
-            numstored++;
+    /* open the directory */ 
+    sddir = diropen(rootSDdir);
+        if (sddir == NULL) {
+        strcpy(rootSDdir, "fat:/");
+        sddir = diropen(rootSDdir);
+        if (sddir == NULL) {
+            sprintf(filename, "Error opening %s", rootSDdir);
+            WaitPrompt(filename);
+            return 0;
         }
-        nbfiles++;
-        entries--;
     }
 
-    /*** Release memory ***/
-    free(sddir);
+    /* Move to DVD structure - this is required for the file selector */ 
+    while(dirnext(sddir,filename,&filestat) == 0) {
+        if(strcmp(filename,".") != 0) {
+            memset(&filelist[numstored], 0, sizeof(FILEENTRIES));
+            strncpy(filelist[numstored].filename, filename, MAXPATHLEN);
+            filelist[numstored].length = filestat.st_size;
+            filelist[numstored].flags = (filestat.st_mode & _IFDIR) == 0 ? 0 : 1;
+            numstored++;
+        }
+    }
 
+    /*** close directory ***/
+    dirclose(sddir);
+	
+	/* Sort the file list */
+ 	qsort(filelist, numstored, sizeof(FILEENTRIES), FileSortCallback);
+	
     return numstored;
 }
 
@@ -659,6 +702,7 @@ void FileSelector()
                         haveSDdir = 0; // reset everything at next access
                     }
                 }
+#ifdef __gamecube__
                 else
                 {
                     rootdir = filelist[selection].offset;
@@ -666,6 +710,7 @@ void FileSelector()
                     offset = selection = 0;
                     maxfiles = parsedir();
                 }
+#endif
             }
             else
             {
@@ -676,7 +721,7 @@ void FileSelector()
                 Memory.LoadROM( "DVD" );
                 Memory.LoadSRAM( "DVD" );
 				if (autoSaveLoad && Memory.SRAMSize && SaveSRAM(0,slot,device)) //Load SRAM 
-					S9xSoftReset(); //Reset emu
+                    S9xSoftReset(); //Reset emu
 
                 haverom = 1;
             }
@@ -706,13 +751,14 @@ int LoadDVDFile( unsigned char *buffer )
     discoffset = rootdir;
 
     ShowAction((char*)"Loading ... Wait");	
-    if (UseSDCARD) SDCARD_ReadFile (filehandle, &readbuffer, 2048);  
+    if (UseSDCARD) fread(readbuffer, 1, 2048, filehandle);
     else dvd_read(&readbuffer, 2048, discoffset);
 
     if ( isZipFile() == false ) {
-        if (UseSDCARD) SDCARD_SeekFile (filehandle, 0, SDCARD_SEEK_SET);
+        if (UseSDCARD) fseek(filehandle, 0, SEEK_SET);
+        
         for ( i = 0; i < blocks; i++ ) {
-            if (UseSDCARD) SDCARD_ReadFile (filehandle, &readbuffer, 2048);	  
+            if (UseSDCARD) fread(readbuffer, 1, 2048, filehandle);
             else dvd_read(&readbuffer, 2048, discoffset);
             memcpy(&buffer[offset], &readbuffer, 2048);
             offset += 2048;
@@ -722,18 +768,19 @@ int LoadDVDFile( unsigned char *buffer )
         /*** And final cleanup ***/
         if( rootdirlength % 2048 ) {
             i = rootdirlength % 2048;
-            if (UseSDCARD) SDCARD_ReadFile (filehandle, &readbuffer, i);	  
+            if (UseSDCARD) fread(readbuffer, 1, i, filehandle);
             else dvd_read(&readbuffer, 2048, discoffset);
             memcpy(&buffer[offset], &readbuffer, i);
         }
     } else {		
         return unzipDVDFile( buffer, discoffset, rootdirlength);
     }
-    if (UseSDCARD) SDCARD_CloseFile (filehandle);
+    if (UseSDCARD) fclose(filehandle);
 
     return rootdirlength;
 }
 
+#ifdef __gamecube__
 /****************************************************************************
  * OpenDVD
  *
@@ -773,6 +820,7 @@ int OpenDVD() {
 
     return 1;		
 }
+#endif
 
 int OpenSD () {
     UseSDCARD = 1;
@@ -780,13 +828,13 @@ int OpenSD () {
 
     if (choosenSDSlot != sdslot) haveSDdir = 0;
 
-    if (haveSDdir == 0)
-    {
+    if (haveSDdir == 0){
+#ifdef __gamecube__
         /* don't mess with DVD entries */
         havedir = 0;
-
+#endif
         /* Reset SDCARD root directory */
-        sprintf(rootSDdir,"dev%d:\\snes9x\\roms",choosenSDSlot);
+        sprintf(rootSDdir,"/%s/%s", SNESDIR, ROMSDIR);
         sdslot = choosenSDSlot;
 
         /* Parse initial root directory and get entries list */
@@ -801,7 +849,7 @@ int OpenSD () {
             haveSDdir = 1;
         } else {
             /* no entries found */
-            sprintf (msg, "Error reading dev%d:\\snes9x\\roms", choosenSDSlot);
+            sprintf (msg, "Error reading %s", rootSDdir);
             WaitPrompt (msg);
             return 0;
         }
@@ -818,12 +866,12 @@ int OpenSD () {
  ****************************************************************************/ 
 void GetSDInfo () 
 {
-    char fname[SDCARD_MAX_PATH_LEN];
+    char fname[MAXPATHLEN];
     rootdirlength = 0;
 
-    /* Check filename length */
-    if ((strlen(rootSDdir)+1+strlen(filelist[selection].filename)) < SDCARD_MAX_PATH_LEN)
-        sprintf(fname, "%s\\%s",rootSDdir,filelist[selection].filename); 
+   /* Check filename length */
+    if ((strlen(rootSDdir)+1+strlen(filelist[selection].filename)) < MAXPATHLEN)
+        sprintf(fname, "%s/%s",rootSDdir,filelist[selection].filename); 
 
     else
     {
@@ -831,11 +879,13 @@ void GetSDInfo ()
         haveSDdir = 0; // reset everything before next access
     }
 
-    filehandle = SDCARD_OpenFile (fname, "rb");
+    filehandle = fopen(fname, "rb");
     if (filehandle == NULL)
     {
         WaitPrompt ((char*)"Unable to open file!");
         return;
     }
-    rootdirlength = SDCARD_GetFileSize (filehandle);
+    fseek(filehandle, 0, SEEK_END);
+    rootdirlength = ftell(filehandle);
+    fseek(filehandle, 0, SEEK_SET);
 }

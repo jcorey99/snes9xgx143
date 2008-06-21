@@ -9,6 +9,7 @@
 #include <gccore.h>
 #include <snes9x.h>
 #include <soundux.h>
+#include "iplfont.h"
 #include "display.h"
 #include "memmap.h"
 #include "gcgxvideo.h"
@@ -90,10 +91,14 @@ unsigned int GetAnalog( int Joy )
 
     return i;
 }
+
 extern int gcScreenX;
 extern int gcScreenY;
 extern int SCOPEPADCAL;
-char msg[12];
+int gcX = 0;
+int gcY = 0;
+
+char msg0[32];
 
 unsigned int GetJoys(int which)
 {
@@ -102,7 +107,8 @@ unsigned int GetJoys(int which)
 
     /*** Check for menu, now CStick left/right (and if you use a HORI controller Z + R works too) ***/
     px = PAD_SubStickX (0);
-    if ( (px < -PADCAL) || (PAD_ButtonsHeld(0) == ( PAD_TRIGGER_Z  | PAD_TRIGGER_R )) || (PAD_ButtonsHeld(0) == ( PAD_TRIGGER_L  | PAD_TRIGGER_R | PAD_BUTTON_X | PAD_BUTTON_Y )))
+    if ( (px < -PADCAL) || (PAD_ButtonsHeld(0) == ( PAD_TRIGGER_Z  | PAD_TRIGGER_R )) || 
+		(PAD_ButtonsHeld(0) == ( PAD_TRIGGER_L  | PAD_TRIGGER_R | PAD_BUTTON_X | PAD_BUTTON_Y )))
     {
 		if (autoSaveLoad && Memory.SRAMSize)
 		{
@@ -116,6 +122,10 @@ unsigned int GetJoys(int which)
 		}
 		ConfigRequested = 1;
 	}
+	
+	//unsigned short p = PAD_ButtonsHeld(0);
+	//if (Settings.SuperScope){
+	//}
 	
 	if (px > PADCAL){ 
 		S9xNextController ();
@@ -132,19 +142,26 @@ unsigned int GetJoys(int which)
 		Settings.ControllerOption=IPPU.Controller;
 	}
 	
-	signed char padX = PAD_StickX(0);
-	signed char padY = PAD_StickY(0);
-	
 	//For debugging
-	if ((padX < -SCOPEPADCAL) || (padX > SCOPEPADCAL) || (padY > SCOPEPADCAL) || (padY < -SCOPEPADCAL)){
-		sprintf(msg, "X=%d Y=%d", gcScreenX, gcScreenY);	
-		S9xSetInfoString (msg);
+	if (Settings.SuperScope == true){
+		signed char padX = PAD_StickX(0);
+		signed char padY = PAD_StickY(0);
+	
+		if ((padX < -SCOPEPADCAL) || (padX > SCOPEPADCAL) || (padY > SCOPEPADCAL) || (padY < -SCOPEPADCAL)){
+			gcX = 100 * gcScreenX / 256;
+			gcY = 100 * gcScreenY / 224;
+			sprintf(msg0, "X=%d Y=%d", gcX, gcY);
+			//sprintf(msg0, "X=%d Y=%d", gcScreenX, gcScreenY);
+			S9xSetInfoString (msg0);
+		}
 	}
     joypads = 0;
 
-    joypads = DecodeJoy( PAD_ButtonsHeld(which) );
-    joypads |= GetAnalog(which);
-
+	if (Settings.SuperScope == false){
+		joypads = DecodeJoy( PAD_ButtonsHeld(which) );
+		joypads |= GetAnalog(which);
+	}
+	
     return joypads;
 }
 

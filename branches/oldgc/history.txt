@@ -1,14 +1,44 @@
 SNES9X 1.43 GX Edition
 
-Please, keep source code when you made a change, this is an open source project.
+Please, keep the source code when you make any changes, this is an open source
+project.
 
-All of you know how great is playing SNES games on Nintendo Gamecube, it's
-awesome to play a lot of games that makes us have a lot of fun in our childhood.
+All of you know how great it is playing SNES games on the Nintendo Gamecube,
+it's awesome to play the games that made us have a lot of fun in our childhood.
 
 The version of this emulator was unupdated and almost forgotten, but (for me, 
 it's more) playable, and no body wanted to do something about it, so I decided 
 to make some changes to bring it to life, even if someone dislike it or if 
 it's an unofficial release.
+
+Source code is available at Google Code
+(http://code.google.com/p/snes9xgx143/).
+
+Current Additions
++[dsbomb]
+- Fixed PAL timming issues.
+- Fixes to Nephropidae contributions.
+
++[Askot]
+- Added SuperScope mode.
+- Fixed save buffer size for saving states.
+- Added auto save/load option.
+
++[Nephropidae]
+- Added libfat support.
+
+Version 0.1.1 [20080417]
++[Askot]
+- Added Save state in Zip mode for SD Gecko and Memory Card. Source mainly taken
+  from SnesGX 2.0b8 [beta]
+- Fixed a sound glitch every time SDReload was used.
+
++[dsbomb]
+- GC: fixed DVD support, can read ROMs and ZIPs.
+- Removed certain menu options that are not usable in either Wii or GC mode
+- Proper Wii reboot support
+- Left/right on the dpad are usable on many menu items.
+- WiiSD write support for SRAM, Save states
 
 Version 0.1.0 [20080331]
 
