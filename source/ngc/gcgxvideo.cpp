@@ -53,6 +53,8 @@ GXColor background = {0, 0, 0, 0xff};
 static Mtx projectionMatrix,modelViewMatrix;
 extern void InitZip();
 
+u8 vmode_60hz = 0;
+
 /****************************************************************************
  * VideoThreading
  *
@@ -133,6 +135,7 @@ void StartGX()
     GX_SetVtxAttrFmt(GX_VTXFMT0,GX_VA_TEX0,GX_TEX_ST,GX_F32,0);
     GX_SetVtxDesc(GX_VA_POS,GX_DIRECT);
     GX_SetVtxDesc(GX_VA_TEX0,GX_DIRECT);
+    GX_Flush(); // Thanks to eke-eke
 
     S9xSetRenderPixelFormat(RGB565); 
 }
@@ -441,34 +444,33 @@ void InitGCVideo()
     VIDEO_Init();
     PAD_Init();
 
-    switch (VIDEO_GetCurrentTvMode ())
+    vmode = VIDEO_GetPreferredMode(NULL);
+
+    switch(vmode->viTVMode)
     {
-        case VI_NTSC:
-            vmode = &TVNtsc480IntDf;
-            break;
+    	case VI_TVMODE_PAL_DS:
+	case VI_TVMODE_PAL_INT:
+	    vmode_60hz = 0;
+	    break;
 
-        case VI_PAL:
-            vmode = &TVPal528IntDf;
-            break;
-        case VI_MPAL:
-            vmode = &TVMpal480IntDf;
-            break;
-
-        default:
-            vmode = &TVNtsc480IntDf;
-            break;
+	case VI_TVMODE_EURGB60_PROG:
+	case VI_TVMODE_EURGB60_DS:
+    	case VI_TVMODE_NTSC_DS:
+	case VI_TVMODE_NTSC_INT:
+	case VI_TVMODE_NTSC_PROG:
+	case VI_TVMODE_MPAL_INT:
+    	default:
+	    vmode_60hz = 1;
+	    break;
     }
 
-#ifdef FORCE_PAL50
-    vmode = &TVPal528IntDf;
-#endif
-
     VIDEO_Configure(vmode);
+
 
     xfb[0] = (unsigned int *)MEM_K0_TO_K1(SYS_AllocateFramebuffer(vmode));
     xfb[1] = (unsigned int *)MEM_K0_TO_K1(SYS_AllocateFramebuffer(vmode));
 
-    console_init(xfb[0],20,64,vmode->fbWidth,vmode->xfbHeight,vmode->fbWidth*2);
+    //console_init(xfb[0],20,64,vmode->fbWidth,vmode->xfbHeight,vmode->fbWidth*2);
     VIDEO_ClearFrameBuffer( vmode, xfb[ 0 ], COLOR_BLACK );
     VIDEO_ClearFrameBuffer( vmode, xfb[ 1 ], COLOR_BLACK );
     VIDEO_SetNextFramebuffer(xfb[0]);
@@ -482,7 +484,6 @@ void InitGCVideo()
 
     copynow = GX_FALSE;
     StartGX();
-
     InitVideoThread();	
 
     /*** Initialise the font for menus ***/
@@ -490,6 +491,5 @@ void InitGCVideo()
 
     /*** Initialise the DVD subsystem ***/
     DVD_Init();
-
 }
 

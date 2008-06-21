@@ -12,8 +12,6 @@
 #include "iplfont.h"
 #include "gcstate.h"
 
-#define PSOSDLOADID 0x7c6000a6
-
 extern unsigned int copynow;
 extern GXRModeObj *vmode;
 extern unsigned int *xfb[2];
@@ -47,8 +45,6 @@ void ClearScreen();
 
 char *title = "Snes9x 1.43 - GX Edition 0.1.2";
 extern int CARDSLOT;
-
-int *psoid = (int *) 0x80001800;
 
 #define SOFTRESET_ADR ((volatile u32*)0xCC003024)
 
@@ -319,13 +315,13 @@ char PADMap( int padvalue, int padnum )
  *
  * This screen simply let's the user swap A/B/X/Y around.
  ****************************************************************************/
-int configpadcount = 9;
-char padmenu[9][20] = { 
+int configpadcount = 8;
+char padmenu[8][20] = { 
     { "SETUP A" }, 
     { "SNES BUTTON A - X" }, { "SNES BUTTON B - A" },
     { "SNES BUTTON X - B" }, { "SNES BUTTON Y - Y" },
     { "ANALOG CLIP   - 70"}, { "ALLOW U+D / L+R OFF"}, 
-    { "SUPER SCOPE: OFF"  }, { "Return to previous" } 
+    { "Return to previous" } 
 };
 /*int padmap[4] = { 0,1,2,3};*/
 int conmap[5][4] = { 
@@ -361,7 +357,6 @@ void ConfigPAD()
             sprintf(padmenu[0], "SETUP %c", PADCON + 65);
             sprintf(padmenu[5], "ANALOG CLIP   - %d", PADCAL);
             sprintf(padmenu[6], allowupdown == 1 ? "ALLOW U+D / L+R ON" : "ALLOW U+D / L+R OFF");
-            sprintf(padmenu[7], (Settings.SuperScope) ? "SUPER SCOPE:  ON" : "SUPER SCOPE: OFF");
             DrawMenu("Gamecube Pad Configuration", &padmenu[0], configpadcount, menu);
         }
 
@@ -412,17 +407,11 @@ void ConfigPAD()
                 case 6: i = -1;
                     allowupdown ^= 1;
                     break;
-
-                case 7:
-                    Settings.SuperScope ^= 1;
 					
-                    if (Settings.SuperScope){ Settings.ControllerOption = SNES_SUPERSCOPE; }
-                    else{ Settings.ControllerOption = SNES_JOYPAD; }
-					
-                    Settings.SuperScopeMaster = Settings.SuperScope;
-                    break;
+                case 7: 
+					quit = 1; 
+					break;
 
-                case 8: quit = 1; break;
                 default: break;
             }
 
@@ -457,7 +446,7 @@ char sgmenu[5][20] = {
 };
 
 int slot = 0;
-int device = (psoid[0] != PSOSDLOADID) ? 0 : 1; //If not using SD device MCARD : SDCARD
+int device = 1; //If not using SD device MCARD : SDCARD
 char saveTitle[1][20]= {
 	{ "Save SRAM Manager" }
 };
@@ -473,6 +462,8 @@ void savegame(int type) //{0=SRAM, 1=STATE}
     sprintf(saveTitle[0], (!type) ? "Save SRAM Manager" : "Save STATE Manager");
 	sprintf(sgmenu[2], (!type) ? "Save SRAM" : "Save State");
     sprintf(sgmenu[3], (!type) ? "Load SRAM" : "Load State");
+	
+	slot = (slot !=0 && slot !=1) ? 0 : slot;
     
     while ( quit == 0 )
     {
@@ -513,10 +504,10 @@ void savegame(int type) //{0=SRAM, 1=STATE}
                     break;
                 case 3 :
                     if (!type){ 
-							if (SaveSRAM(0,slot,device)){  //Load SRAM
-								S9xSoftReset(); //Reset emu
-							}
+						if (SaveSRAM(0,slot,device)){  //Load SRAM
+							S9xSoftReset(); //Reset emu
 						}
+					}
                     else NGCUnfreezeGame (device, slot); //Load State
                     break;
                 case 4 :
@@ -603,12 +594,13 @@ int FileMenu ()
  *
  * Moved to new standalone menu for 0.0.4
  ****************************************************************************/
-int emumenucount = 8;
-char emumenu[8][20] = { 
+int emumenucount = 9;
+char emumenu[9][20] = { 
     {"Sound Echo ON"}, {"Reverse Stereo OFF"},
     {"Transparency ON"}, {"FPS Display OFF"},
     {"Interpolate OFF"}, {"Timer VBLANK"},
-    {"Multitap ON"},{"Return to Previous"} 
+    {"Multitap ON"}, { "Super Scope OFF"  },
+	{"Return to Previous"} 
 };
 void EmuMenu()
 {
@@ -628,6 +620,7 @@ void EmuMenu()
             strcpy(emumenu[4], Settings.InterpolatedSound == TRUE ? "Interpolate ON" : "Interpolate OFF");
             strcpy(emumenu[5], timerstyle == 0 ? "Timer VBLANK" : "Timer CLOCK");
             strcpy(emumenu[6], Settings.MultiPlayer5 == true ? "Multitap ON" : "Multitap OFF");
+			sprintf(emumenu[7], Settings.SuperScope == true ? "Super Scoper  ON" : "Super Scoper OFF");
             DrawMenu("Emulator Options", &emumenu[0], emumenucount, menu);
         }
 
@@ -673,9 +666,27 @@ void EmuMenu()
                         Settings.ControllerOption = SNES_MULTIPLAYER5;
                     else
                         Settings.ControllerOption = SNES_JOYPAD;
+						
                     Settings.MultiPlayer5Master = Settings.MultiPlayer5;
-                    break;	
-                case 7 : 	
+					
+					Settings.SuperScope = FALSE;
+					Settings.SuperScopeMaster = FALSE;
+					//Settings.SwapJoypads = FALSE;
+                    break;
+				case 7:
+                    Settings.SuperScope ^= 1;
+                    if (Settings.SuperScope) 
+						Settings.ControllerOption = SNES_SUPERSCOPE; 
+                    else
+						Settings.ControllerOption = SNES_JOYPAD; 
+					
+                    Settings.SuperScopeMaster = Settings.SuperScope;
+					//Settings.SwapJoypads = Settings.SuperScope;
+					
+					Settings.MultiPlayer5 = FALSE;
+					Settings.MultiPlayer5Master = FALSE;
+                    break;
+                case 8 : 	
                     quit = 1;
                     break;
             }			
@@ -737,11 +748,12 @@ int MediaSelect(){
         if ( j & PAD_BUTTON_A ) {
             redraw = 1;
             switch ( menu ) {
+#ifdef __gamecube__
                 case 0:	UseSDCARD = 0;
                         OpenDVD();
                         return 1;
                         break;
-
+#endif
                 case 1:	UseSDCARD = 1;
                         OpenSD();
                         return 1;
@@ -808,13 +820,13 @@ int ConfigMenu()
     short j;
     int redraw = 1;
     int quit = 0;
-	int isQuiting = 0;
-
-    void (*PSOReload)() = (void(*)())0x80001800;
+	int isExit = 0;
 
     copynow = GX_FALSE;
     Settings.Paused =TRUE;
     S9xSetSoundMute(TRUE);
+	
+	void (*PSOReload) () = (void (*)()) 0x80001800;
 
     if (isWii) {
         strcpy(configmenu[9], "Reboot Wii");
@@ -868,16 +880,20 @@ int ConfigMenu()
                     EmuMenu();
                     break;
                 case 7: // Stop DVD Motor
-                    ShowAction("Stopping DVD ... Wait");
+                    ShowAction((char*)"Stopping DVD ... Wait");
                     dvd_motor_off();
-                    WaitPrompt("DVD Motor Stopped");
+                    WaitPrompt((char*)"DVD Motor Stopped");
                     break;
                 case 8 : // PSO Reload
-					isQuiting = 1;
+					isExit = 1;
                     PSOReload();
                     break;
                 case 9 : // Reboot
-                    *SOFTRESET_ADR = 0x00000000;
+#ifdef __wii__
+					SYS_ResetSystem(SYS_RETURNTOMENU, 0, 0);
+#else
+					SYS_ResetSystem(SYS_HOTRESET,0,FALSE);
+#endif
                     break;
                 case 10 : // View Credits
                     credits();
@@ -899,7 +915,7 @@ int ConfigMenu()
 
     uselessinquiry ();		/*** Stop the DVD from causing clicks while playing ***/
 	
-	if (!isQuiting){
+	if (!isExit){
 		S9xSetSoundMute(FALSE);
 		Settings.Paused = FALSE;
 	}

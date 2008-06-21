@@ -16,9 +16,8 @@
 #include <string.h>
 #include <zlib.h>
 #include "gcdvd.h"
-#include <sdcard.h>
 
-extern sd_file *filehandle;
+extern FILE *filehandle;
 extern int UseSDCARD;
 
 extern void ShowAction( char *msg );
@@ -158,7 +157,7 @@ int unzipDVDFile( unsigned char *outbuffer,
         zipchunk = ZIPCHUNK;
         discoffset += 2048;
         if ( UseSDCARD )
-            SDCARD_ReadFile(filehandle, &readbuffer, 2048);
+            fread(readbuffer, 1, 2048, filehandle);
         else
             dvd_read(&readbuffer, 2048, discoffset);
 
@@ -166,8 +165,7 @@ int unzipDVDFile( unsigned char *outbuffer,
 
     inflateEnd(&zs);
 
-    if ( UseSDCARD )
-        SDCARD_CloseFile(filehandle);
+    if ( UseSDCARD ) fclose(filehandle);
 
     if ( res == Z_STREAM_END ) {
         if ( FLIP32(pkzip.uncompressedSize == (u32)bufferoffset ) )

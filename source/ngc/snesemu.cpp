@@ -8,7 +8,7 @@
  ****************************************************************************/
 
 #include <gccore.h>
-#include <sdcard.h>
+#include <fat.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -33,6 +33,8 @@
 
 uint32 screen_width = 0;
 uint32 screen_height = 0;
+
+extern u8 vmode_60hz;
 
 /*** Video defaults ***/
 unsigned char *offscreen;
@@ -60,8 +62,8 @@ void (*PSOReload)() = (void(*)())0x80001800;
 static void reset_cb() {
     PSOReload();
 }
-tb_t prev;
-tb_t now;
+long long prev;
+long long now;
 
 /****************************************************************************
  * Dummy Message Handler
@@ -89,7 +91,6 @@ unsigned int timediffallowed;
 
 void S9xSyncSpeed()
 {
-
     if ( timerstyle == 0 ) {
         while ( FrameTimer == 0 ) { usleep(100); };	/*** Yay! - we're ahead ***/ 
 
@@ -108,12 +109,11 @@ void S9xSyncSpeed()
         }
     } 
     else {
-        mftb(&now);
-
-        if ( tb_diff_usec(&now, &prev) > timediffallowed )
+        now = gettime();
+        if ( diff_usec(prev, now) > timediffallowed )
         {
-            while ( tb_diff_usec(&now, &prev) < timediffallowed * 2) {
-                mftb(&now);
+            while ( diff_usec(prev, now) < timediffallowed * 2) {
+                now = gettime();
             }
 
             if ( IPPU.SkippedFrames < Settings.SkipFrames ) {
@@ -125,16 +125,16 @@ void S9xSyncSpeed()
             }
         } else {
             /*** Ahead - so hold up ***/
-            while ( tb_diff_usec(&now, &prev) < timediffallowed ) 
+            while ( diff_usec(prev, now) < timediffallowed ) 
             {
-                mftb(&now);
+	        now = gettime();
             }
 
             IPPU.RenderThisFrame = TRUE;
             IPPU.SkippedFrames = 0;
         }
 
-        memcpy(&prev, &now, sizeof(tb_t));
+        prev = now;
     }
 
     FrameTimer--;
@@ -211,20 +211,21 @@ unsigned int S9xReadJoypad (int which1)
  *
  * Emulate SuperScope through Joypads / ¿WiiMote?
  ****************************************************************************/
- // Fire / Action / Pause / Turbo
-unsigned short gcscopemap[] = {
-    PAD_BUTTON_B, PAD_BUTTON_A, PAD_BUTTON_START, PAD_TRIGGER_Z};
-
-unsigned int snesscopemap[] = {
-    SNES_B_MASK, SNES_A_MASK, SNES_START_MASK, SNES_SELECT_MASK};
-
 int gcScreenX = 0;
 int gcScreenY = 0;
+
+int superscope_fire = 0;
+int superscope_action = 0;
+int superscope_pause = 0;
+int superscope_turbo = 0;
+
 int SCOPEPADCAL = 20;
+
+char msg[32];
 
 bool8 S9xReadSuperScopePosition (int &x, int &y, uint32 &buttons)
 {
-    if (Settings.SuperScope){
+    if (Settings.SuperScope == true){
 	
 	    signed char padX = PAD_StickX(0);
         signed char padY = PAD_StickY(0);
@@ -245,17 +246,34 @@ bool8 S9xReadSuperScopePosition (int &x, int &y, uint32 &buttons)
         if (padY > SCOPEPADCAL){
 			gcScreenY -=4;
             if (gcScreenY < 0) gcScreenY = 0;            
-        }       
+        }
        
         x = gcScreenX;
         y = gcScreenY;
 
-        unsigned short p = PAD_ButtonsHeld(0);
+		unsigned short down = PAD_ButtonsDown(0);
+		if (down & PAD_BUTTON_B ){ 
+			superscope_fire |= 1;
+		}
+		if (down & PAD_BUTTON_A){ 
+			superscope_action |= 1;
+		}
+		if (down & PAD_TRIGGER_Z){ 
+			superscope_turbo ^= 1;
+		}
+		if (down & PAD_BUTTON_START){ 
+			superscope_pause ^= 1;
+		}
 
-        for (int i = 0; i < 4; i++ ) {
-            if ( p & gcscopemap[i] )           
-                buttons |= snesscopemap[i];           
-        }
+		unsigned short up = PAD_ButtonsUp(0);
+		if (up & PAD_BUTTON_B ){ 
+			superscope_fire &= ~1;
+		}
+		if (up & PAD_BUTTON_A){ 
+			superscope_action &= ~1;
+		}
+
+		buttons = superscope_fire<<0 | superscope_action<<1 | superscope_turbo<<2 | superscope_pause<<3;
 
         return (TRUE);
     }
@@ -330,7 +348,6 @@ void configDefaults()
     Settings.ReverseStereo = FALSE;
 
     Settings.SwapJoypads = FALSE;
-
 }
 
 /****************************************************************************
@@ -344,11 +361,23 @@ void Emulate()
     /*** Sync ***/
     VIDEO_WaitVSync();
 
-    mftb(&prev);
+    prev = gettime();
     if ( Settings.PAL )
+    {
+        if(vmode_60hz == 1)
+            timerstyle = 1;
+        else
+            timerstyle = 0;
         timediffallowed = Settings.FrameTimePAL;
+    }
     else
+    {
+        if(vmode_60hz == 1)
+            timerstyle = 0;
+        else
+            timerstyle = 1;
         timediffallowed = Settings.FrameTimeNTSC;
+    }
 
     while (1)
     {
@@ -377,7 +406,7 @@ int main()
     InitGCVideo();
     SYS_SetResetCallback(reset_cb);
     unpackanim();
-    SDCARD_Init();
+    fatInitDefault();
 
     /*** Get Drive Type ***/
     dvd_inquiry();

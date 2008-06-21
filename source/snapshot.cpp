@@ -618,11 +618,11 @@ bool8 S9xUnfreezeGame (const char *filename)
 			{
 			case WRONG_FORMAT:
 				S9xMessage (S9X_ERROR, S9X_WRONG_FORMAT, "File not in Snes9x freeze format");
-				WaitPrompt("File not in Snes9x freeze format");
+				WaitPrompt((char*)"File not in Snes9x freeze format");
 				break;
 			case WRONG_VERSION:
 				S9xMessage (S9X_ERROR, S9X_WRONG_VERSION,"Incompatable Snes9x freeze file format version");
-				WaitPrompt("Incompatable Snes9x freeze file format version");
+				WaitPrompt((char*)"Incompatable Snes9x freeze file format version");
 				break;
 			case WRONG_MOVIE_SNAPSHOT:
 				S9xMessage (S9X_ERROR, S9X_WRONG_MOVIE_SNAPSHOT, MOVIE_ERR_SNAPSHOT_WRONG_MOVIE);
