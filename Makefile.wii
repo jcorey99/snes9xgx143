@@ -16,11 +16,9 @@ include $(DEVKITPPC)/wii_rules
 # INCLUDES is a list of directories containing extra header files
 #---------------------------------------------------------------------------------
 TARGET		:=	snesgxwi
-BUILD		:=	build
+BUILD		:=	build_wii
 SOURCES		:=	source/ngc source source/roms 
-#source/ngc/wiisd
 INCLUDES	:=	include source source/linux 
-#source/ngc/wiisd
 # Specify language in all capitals
 # Supported languages: ENGLISH, SPANISH, GERMAN, DUTCH
 LANG		:=	ENGLISH
@@ -144,4 +142,4 @@ endif
 #---------------------------------------------------------------------------------
 tags:
 	@(cd source; ctags *.cpp *.h \
-	    ngc/*.cpp ngc/*.h ngc/wiisd/*.h ngc/wiisd/*.cpp )
+	    ngc/*.cpp ngc/*.h ngc/intl/english.h )
