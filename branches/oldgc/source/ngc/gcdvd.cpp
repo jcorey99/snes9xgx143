@@ -75,6 +75,8 @@ extern int SaveSRAM( int mode, int slot, int type);
 extern int slot;
 extern int device;
 extern int autoSaveLoad;
+
+extern int gcScreenX, gcScreenY;
 /****************************************************************************
  * DVD Lowlevel Functions
  *
@@ -720,6 +722,10 @@ void FileSelector()
                 LoadFromDVD = 1;
                 Memory.LoadROM( "DVD" );
                 Memory.LoadSRAM( "DVD" );
+				if (Settings.SuperScope == true || Settings.Mouse == true){
+					gcScreenX=128;
+					gcScreenY=112;
+				}
 				if (autoSaveLoad && Memory.SRAMSize && SaveSRAM(0,slot,device)) //Load SRAM 
                     S9xSoftReset(); //Reset emu
 

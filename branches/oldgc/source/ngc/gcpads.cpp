@@ -127,7 +127,7 @@ unsigned int GetJoys(int which)
 	//if (Settings.SuperScope){
 	//}
 	
-	if (px > PADCAL){ 
+	/*if (px > PADCAL){ 
 		S9xNextController ();
 		static char *controllers [] = {
 			WINPROC_CONTROLERS0, 
@@ -140,10 +140,10 @@ unsigned int GetJoys(int which)
 		};
 		S9xSetInfoString (controllers [IPPU.Controller]);
 		Settings.ControllerOption=IPPU.Controller;
-	}
-	
+	}*/
+
 	//For debugging
-	if (Settings.SuperScope == true){
+	if (Settings.SuperScope == true || Settings.Mouse == true){
 		signed char padX = PAD_StickX(0);
 		signed char padY = PAD_StickY(0);
 	
@@ -157,7 +157,7 @@ unsigned int GetJoys(int which)
 	}
     joypads = 0;
 
-	if (Settings.SuperScope == false){
+	if (Settings.SuperScope == false || Settings.Mouse == false){
 		joypads = DecodeJoy( PAD_ButtonsHeld(which) );
 		joypads |= GetAnalog(which);
 	}

@@ -65,6 +65,18 @@ static void reset_cb() {
 long long prev;
 long long now;
 
+int gcScreenX = 128;
+int gcScreenY = 112;
+
+int superscope_fire = 0;
+int superscope_action = 0;
+int superscope_pause = 0;
+int superscope_turbo = 0;
+
+int SCOPEPADCAL = 30;
+
+char msg[32];
+
 /****************************************************************************
  * Dummy Message Handler
  ****************************************************************************/
@@ -211,18 +223,6 @@ unsigned int S9xReadJoypad (int which1)
  *
  * Emulate SuperScope through Joypads / ¿WiiMote?
  ****************************************************************************/
-int gcScreenX = 0;
-int gcScreenY = 0;
-
-int superscope_fire = 0;
-int superscope_action = 0;
-int superscope_pause = 0;
-int superscope_turbo = 0;
-
-int SCOPEPADCAL = 20;
-
-char msg[32];
-
 bool8 S9xReadSuperScopePosition (int &x, int &y, uint32 &buttons)
 {
     if (Settings.SuperScope == true){
@@ -274,6 +274,64 @@ bool8 S9xReadSuperScopePosition (int &x, int &y, uint32 &buttons)
 		}
 
 		buttons = superscope_fire<<0 | superscope_action<<1 | superscope_turbo<<2 | superscope_pause<<3;
+
+        return (TRUE);
+    }
+    else{
+        return (FALSE);
+    }
+}
+
+/****************************************************************************
+ * ReadMousePosition
+ *
+ * Emulate mouse through Joypad
+ ****************************************************************************/
+bool8 S9xReadMousePosition (int which1, int &x, int &y, uint32 &buttons)
+{
+    if (which1 ==0 && Settings.Mouse == true){
+	
+	    signed char padX = PAD_StickX(0);
+        signed char padY = PAD_StickY(0);
+       
+        if (padX > SCOPEPADCAL){
+            gcScreenX +=4;
+            if (gcScreenX > 256) gcScreenX = 256;
+        }
+        if (padX < -SCOPEPADCAL){
+            gcScreenX -=4;
+            if (gcScreenX < 0) gcScreenX = 0;
+        }
+       
+        if (padY < -SCOPEPADCAL){
+			gcScreenY +=4;
+            if (gcScreenY > 224) gcScreenY = 224;
+        }
+        if (padY > SCOPEPADCAL){
+			gcScreenY -=4;
+            if (gcScreenY < 0) gcScreenY = 0;            
+        }
+       
+        x = gcScreenX;
+        y = gcScreenY;
+
+		unsigned short down = PAD_ButtonsDown(0);
+		if (down & PAD_BUTTON_B ){ 
+			superscope_fire |= 1;
+		}
+		if (down & PAD_BUTTON_A){ 
+			superscope_action |= 1;
+		}
+
+		unsigned short up = PAD_ButtonsUp(0);
+		if (up & PAD_BUTTON_B ){ 
+			superscope_fire &= ~1;
+		}
+		if (up & PAD_BUTTON_A){ 
+			superscope_action &= ~1;
+		}
+
+		buttons = superscope_fire<<0 | superscope_action<<1;
 
         return (TRUE);
     }

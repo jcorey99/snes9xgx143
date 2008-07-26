@@ -54,6 +54,7 @@ static Mtx projectionMatrix,modelViewMatrix;
 extern void InitZip();
 
 u8 vmode_60hz = 0;
+extern int gcScreenX, gcScreenY;
 
 /****************************************************************************
  * VideoThreading
@@ -129,12 +130,6 @@ void StartGX()
 
     /*** Additions from ogc spaceship ***/
     GX_SetDispCopyGamma(GX_GM_1_0);
-
-    GX_ClearVtxDesc();
-    GX_SetVtxAttrFmt(GX_VTXFMT0,GX_VA_POS,GX_POS_XYZ,GX_F32,0);
-    GX_SetVtxAttrFmt(GX_VTXFMT0,GX_VA_TEX0,GX_TEX_ST,GX_F32,0);
-    GX_SetVtxDesc(GX_VA_POS,GX_DIRECT);
-    GX_SetVtxDesc(GX_VA_TEX0,GX_DIRECT);
     GX_Flush(); // Thanks to eke-eke
 
     S9xSetRenderPixelFormat(RGB565); 
@@ -350,15 +345,17 @@ void DrawFrame( int Width, int Height )
 
     memset(&texturemem, 0, TEX_WIDTH * TEX_HEIGHT * 4);
 
-    if ( lastwidth != Width )
-    {
-        if( Width != 512 )
-            set256texture();
-        else
-            set512texture();
-
-        lastwidth = Width;
-    }
+    GX_ClearVtxDesc();
+    GX_SetVtxAttrFmt(GX_VTXFMT0,GX_VA_POS,GX_POS_XYZ,GX_F32,0);
+    GX_SetVtxAttrFmt(GX_VTXFMT0,GX_VA_TEX0,GX_TEX_ST,GX_F32,0);
+    GX_SetVtxDesc(GX_VA_POS,GX_DIRECT);
+    GX_SetVtxDesc(GX_VA_TEX0,GX_DIRECT);
+    GX_Flush();
+	
+    if( Width != 512 )
+        set256texture();
+    else
+        set512texture();
 
     if ( lastheight != Height ) {
 
@@ -403,6 +400,38 @@ void DrawFrame( int Width, int Height )
         GX_TexCoord2f32(gs,0);
     }
     GX_End();
+
+    // render SuperScope cursor
+    if (Settings.SuperScope == true)
+    {
+		GX_ClearVtxDesc();
+		GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
+		GX_SetVtxDesc(GX_VA_POS, GX_DIRECT);
+
+		GX_SetVtxDesc(GX_VA_CLR0, GX_DIRECT);
+		GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGB8, 0);
+
+		GX_SetNumChans(1);
+		GX_SetNumTexGens(0);
+		GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORDNULL, GX_TEXMAP_NULL, GX_COLOR0A0);
+		GX_SetTevOp(GX_TEVSTAGE0, GX_PASSCLR);
+		GX_Flush();
+
+		GX_Begin(GX_QUADS, GX_VTXFMT0, 4);
+			GX_Position3f32((f32) (1.0f - ((gcScreenX - 1) / 256.0f)), (f32)((gcScreenY - 1) / 224.0f), 0);
+			GX_Color3f32(1.0f,0.0f,0.0f);
+
+			GX_Position3f32((f32) (1.0f - ((gcScreenX - 1) / 256.0f)), (f32)((gcScreenY + 1) / 224.0f), 0);
+			GX_Color3f32(1.0f,0.0f,0.0f);
+
+			GX_Position3f32((f32) (1.0f - ((gcScreenX + 1) / 256.0f)), (f32)((gcScreenY + 1) / 224.0f), 0);
+			GX_Color3f32(1.0f,0.0f,0.0f);
+
+			GX_Position3f32((f32) (1.0f - ((gcScreenX + 1) / 256.0f)), (f32)((gcScreenY - 1) / 224.0f), 0);
+			GX_Color3f32(1.0f,0.0f,0.0f);
+		GX_End();
+    }
+
     GX_DrawDone();
     copynow = GX_TRUE;
     VIDEO_SetNextFramebuffer(xfb[whichfb]);
