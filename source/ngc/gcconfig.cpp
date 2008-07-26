@@ -71,42 +71,6 @@ void WriteCentre( int y, char *text )
     write_font( CentreTextPosition(text), y, text);
 }
 
-/**
- * Wait for user to press A or B. Returns 0 = B; 1 = A
- */
-int WaitButtonAB ()
-{
-    int btns;
-
-    while ( (PAD_ButtonsDown (0) & (PAD_BUTTON_A | PAD_BUTTON_B)) );
-
-    while ( TRUE )
-    {
-        btns = PAD_ButtonsDown (0);
-        if ( btns & PAD_BUTTON_A )
-            return 1;
-        else if ( btns & PAD_BUTTON_B )
-            return 0;
-    }
-}
-
-/**
- * Show a prompt with choice of two options. Returns 1 if A button was pressed
- and 0 if B button was pressed.
- */
-int WaitPromptChoice (char *msg, char *bmsg, char *amsg)
-{
-    char choiceOption[80];  
-    sprintf (choiceOption, "B = %s   :   A = %s", bmsg, amsg);
-
-    ClearScreen ();  
-    WriteCentre(220, msg);
-    WriteCentre(220 + font_height, choiceOption);  
-    SetScreen ();
-
-    return WaitButtonAB ();
-}
-
 void WaitPrompt( char *msg )
 {
     int quit = 0;
@@ -594,13 +558,13 @@ int FileMenu ()
  *
  * Moved to new standalone menu for 0.0.4
  ****************************************************************************/
-int emumenucount = 9;
-char emumenu[9][20] = { 
+int emumenucount = 10;
+char emumenu[10][20] = { 
     {"Sound Echo ON"}, {"Reverse Stereo OFF"},
     {"Transparency ON"}, {"FPS Display OFF"},
     {"Interpolate OFF"}, {"Timer VBLANK"},
-    {"Multitap ON"}, { "Super Scope OFF"  },
-	{"Return to Previous"} 
+    {"Multitap OFF"}, {"Super Scope OFF"},
+	{"SNES Mouse OFF"}, {"Return to Previous"} 
 };
 void EmuMenu()
 {
@@ -619,8 +583,9 @@ void EmuMenu()
             strcpy(emumenu[3], Settings.DisplayFrameRate == TRUE ? "FPS Display ON" : "FPS Display OFF");
             strcpy(emumenu[4], Settings.InterpolatedSound == TRUE ? "Interpolate ON" : "Interpolate OFF");
             strcpy(emumenu[5], timerstyle == 0 ? "Timer VBLANK" : "Timer CLOCK");
-            strcpy(emumenu[6], Settings.MultiPlayer5 == true ? "Multitap ON" : "Multitap OFF");
+            strcpy(emumenu[6], Settings.MultiPlayer5 == true ? "Multitap  ON" : "Multitap OFF");
 			sprintf(emumenu[7], Settings.SuperScope == true ? "Super Scoper  ON" : "Super Scoper OFF");
+			sprintf(emumenu[8], Settings.Mouse == true ? "SNES Mouse  ON" : "SNES Mouse OFF");
             DrawMenu("Emulator Options", &emumenu[0], emumenucount, menu);
         }
 
@@ -671,7 +636,8 @@ void EmuMenu()
 					
 					Settings.SuperScope = FALSE;
 					Settings.SuperScopeMaster = FALSE;
-					//Settings.SwapJoypads = FALSE;
+					Settings.Mouse = FALSE; 
+					Settings.MouseMaster = FALSE;
                     break;
 				case 7:
                     Settings.SuperScope ^= 1;
@@ -681,12 +647,27 @@ void EmuMenu()
 						Settings.ControllerOption = SNES_JOYPAD; 
 					
                     Settings.SuperScopeMaster = Settings.SuperScope;
-					//Settings.SwapJoypads = Settings.SuperScope;
+
+					Settings.MultiPlayer5 = FALSE;
+					Settings.MultiPlayer5Master = FALSE;
+					Settings.Mouse = FALSE; 
+					Settings.MouseMaster = FALSE;
+                    break;
+                case 8: 	
+					Settings.Mouse ^= 1;
+                    if (Settings.Mouse) 
+						Settings.ControllerOption = SNES_MOUSE; 
+                    else
+						Settings.ControllerOption = SNES_JOYPAD; 
+					
+                    Settings.MouseMaster = Settings.Mouse;
 					
 					Settings.MultiPlayer5 = FALSE;
 					Settings.MultiPlayer5Master = FALSE;
+					Settings.SuperScope = FALSE;
+					Settings.SuperScopeMaster = FALSE;
                     break;
-                case 8 : 	
+                case 9: 	
                     quit = 1;
                     break;
             }			

@@ -2796,14 +2796,12 @@ void S9xProcessMouse (int which1)
     int x, y = 0;
     uint32 buttons = 0;
    
-#ifndef NGC	// No chance of a mouse on the NGC! 
+//#ifndef NGC	// No chance of a mouse on the NGC! 
     if ((IPPU.Controller == SNES_MOUSE || IPPU.Controller == SNES_MOUSE_SWAPPED) && S9xReadMousePosition (which1, x, y, buttons))
     {
 		int delta_x, delta_y;
 #define MOUSE_SIGNATURE 0x1
-		IPPU.Mouse [which1] = MOUSE_SIGNATURE | 
-			      (PPU.MouseSpeed [which1] << 4) |
-		              ((buttons & 1) << 6) | ((buttons & 2) << 6);
+		IPPU.Mouse [which1] = MOUSE_SIGNATURE | (PPU.MouseSpeed [which1] << 4) | ((buttons & 1) << 6) | ((buttons & 2) << 6);
 
 	delta_x = x - IPPU.PrevMouseX[which1];
 	delta_y = y - IPPU.PrevMouseY[which1];
@@ -2857,7 +2855,7 @@ void S9xProcessMouse (int which1)
 	else
 	    IPPU.Joypads [1] = IPPU.Mouse [which1];
     }
-#endif
+//#endif
 
 }
 
