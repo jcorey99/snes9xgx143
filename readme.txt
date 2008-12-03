@@ -10,47 +10,118 @@
 ­———————————————————————————————————————————————————————————————————————•ßrK•
 
 ×—–­—–­—–­—–­ –­—–­—–­—–­—–­—–­—–­—–­—–­—–­— ­—–­—–­—–­—–­—–­—–­—–­—-­—–­-–•¬
-|0O×øo·                  SNES9X v1.43 - GX Edition 0.0.4x             ·oø×O0|
+|0O×øo·                  SNES9X v1.43 - GX Edition                    ·oø×O0|
+|                       Designed for GameCube Users                         |
+|                  http://code.google.com/p/snes9xgx143/                     |
 `¨•¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨'
 
-Welcome to the revolution in GameCube emulators! SNES9X is by far the most
-complete and accurate Super Nintendo Entertainment System emulator to date.
-Taking full power of the ATi-GX chipset and packed full of features that are
-to die for after playing your games you'll never want to come back to
-reality.
-
-SNES9X is a very popular open source emulator mainly for the PC platform, but
-has seen many ports to other consoles such as the Nintendo DS, Microsoft XBOX
-and now thanks to SoftDev the Nintendo GameCube! This is a straight port and
-is not based on any previous SNES emulators that have existed for the
-GameCube. You can get more information on SNES9X here from the below URL.
-http://snes9x.ipherswipsite.com/
-
-[ What's New ]
-
-* XenoGC Support (GC-Linux Homebrew DVD Compatibility)
+SNES9x GX 1.43 is a Super Nintendo emulator for the Gamecube based on the PC 
+emulator SNES9x 1.43 (http://snes9x.ipherswipsite.com/). This project is a
+branch of the main SNES9x GX project (http://code.google.com/p/snes9x-gx). 
+It shares much of the same code, but offers the older 1.43 core, which gives 
+a performance boost to GameCube users for those core-heavy games.
 
 [ Features ]
 
 * Port of SNES9X v1.43
-* Fullscreen Graphics
-* Sound Emulation
-* SRAM Manager
-* DVD Loading
-* 1-4 Player Support
-* Mode 7 Supported
-* Super FX Supported
-* SDD1, SRTC, SA-1 Supported
-* DSP1 & DSP2 Supported
-* Partial DSP4 Support
-* Supports Hi-Res 512x224 screens
-* Joliet Browser
-* PAD Configuration saved with SRAM
-* Memcard save/load time extended
-* Partial Zip support
-* Crude Timer
-* Sound Sync Option
-* Analog Clip
+* Gamecube, Wiimote, Nunchuk, Classic, controller support
+* Auto Load/Save Game Snapshots and SRAM
+* Custom controller configurations
+* SD, USB, DVD (requires DVDx), SMB, GC Memory Card, Zip, and 7z support
+* Autodetect PAL/NTSC, 16:9 widescreen support
+* Original/filtered/unfiltered video modes
+* Turbo Mode - up to 2x the normal speed
+* Zoom option to zoom in/out
+* Open Source!
+
+×—–­—–­—–­—–­ –­—–­—–­—–­—–­—–­—–­—–­—–­—–­— ­—–­—–­—–­—–­—–­—–­—–­—-­—–­-–•¬
+|0O×øo·                         UPDATE HISTORY                        ·oø×O0|
+`¨•¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨'
+
+Version 0.2.0
++[Tantric]
+- Complete code replacement - ported Snes9x 1.43 core into Snes9x GX 007. 
+- Features added:
+  * Wiimote, Nunchuk, and Classic controller support
+  * Button mapping for all controller types
+  * Full support for SD, USB, SMB, DVD, GameCube MC
+  * Load/save preference selector. ROMs, saves, and preferences are 
+    saved/loaded according to these
+  * 'Auto' settings for save/load - attempts to automatically determine
+    your load/save device(s)
+  * Preferences are loaded and saved in XML format. You can open
+    snes9x143/settings.xml edit all settings, including some not 
+    available within the program
+  * Turbo mode, video zooming option
+  * Original & Unfiltered video options
+  * Widescreen support
+  * 7z support
+  * And more!
+
+Version 0.1.1 [20080417]
++[Askot]
+- Added Save state in Zip mode for SD Gecko and Memory Card. Source mainly taken
+  from SnesGX 2.0b8 [beta]
+- Fixed a sound glitch every time SDReload was used.
+
++[dsbomb]
+- GC: fixed DVD support, can read ROMs and ZIPs.
+- Removed certain menu options that are not usable in either Wii or GC mode
+- Proper Wii reboot support
+- Left/right on the dpad are usable on many menu items.
+- WiiSD write support for SRAM, Save states
+
+Version 0.1.0 [20080331]
+
++[Askot]
+- Fixed/changed SDCARD slot selection for searching roms, at 
+  start you will be prompted for this option.
+- Code cleanup.
+
++[dsbomb]
+- Added Wii mode support.
+- Joystick fixes due to libogc r14's changed stick values
+- Rearranged menu to make more sense, and consistent with FCEU
+- Add "Reboot" menu option
+- Removed "." directory from SD card listing, it's pointless
+- Expand DVD reading to DVD9 size (one DVDs are working again)
+- Added option to go back a menu by pressing B.
+
+Version 0.0.9 [20080325]
+- Added SDCARD slot selection for searching roms, meaning, you can search roms 
+  from SDCARD SLOT A or SLOT B (Beta, meaning, buggy, but works).
+- For standarization, you must create folders root:\snes9x\roms to read SNES 
+  roms files from SDCARD.
+- Added combo L+R+X+Y to call menu.
+
+Version 0.0.8 [20080222]
+- Fixed displaying information about a ROM file (oops!)
+- Added saving SRAM file in SD Card with CRC32 ROM data, no LFN format.
+- Menu in saving SRAM file changed to choose SLOT, DEVICE, Save SRAM, 
+  Load SRAM, Return to previous.
+
+Version 0.0.7 [20080127]
+- Add SD card subdirectory browsing:
+  + Set the cursor over [..] and push A button to browse.
+
+- Modified controls when going into the rom selection menu (DVD or 
+  SDCARD):  [ala eke-eke style]
+  + Use B to quit selection list.
+  + Use L/R triggrers or Pad Left/Right to go down/up one full page.
+
+- Some menu rearrangment and a little of sourcecode cleanup: 
+  + Everytime you pressed B button on any option, playgame started, not anymore
+  until you select Play Game option.
+
+Version 0.0.6 [20080121]
+
+The changes are:
+- Compiled with libOGC 20070214, meaning: can read SD Card Up to 2GB
+- Fixed L & R buttons
+- Fixed Multitap 5 set to Off
+- Added auto reset after loading a SRAM file
+- Reading files from SD Card it's faster, now they're called from cache
+  after first reading.
 
 ×—–­—–­—–­—–­ –­—–­—–­—–­—–­—–­—–­—–­—–­—–­— ­—–­—–­—–­—–­—–­—–­—–­—-­—–­-–•¬
 |0O×øo·                        PARTIAL PKZIP SUPPORT                  ·oø×O0|
@@ -124,7 +195,7 @@ To leave the options at their default and continue to play the game simply
 press the 'A' button and enjoy!
 
 ×—–­—–­—–­—–­ –­—–­—–­—–­—–­—–­—–­—–­—–­—–­— ­—–­—–­—–­—–­—–­—–­—–­—-­—–­-–•¬
-|0O×øo·                            CONFiGURATION                      ·oø×O0|
+|0O×øo·                            CONFIGURATION                      ·oø×O0|
 `¨•¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨'
 
 To load the configuration menu press Z + LEFT TRIGGER at the same time and
@@ -216,54 +287,9 @@ Stop DVD Motor
 
                                   Technical Credits
 
-                            Snes9x v1.4.3 - Snes9x Team
-                              GameCube Port - SoftDev
+                           Snes9x GX 1.43 - Askot & dsbomb
+                          Snes9x GX - Tantric & michniewski
+                          Original GameCube Port - SoftDev
+                             Snes9x v1.4.3 - Snes9x Team
                             GX - http://www.gc-linux.org
-                                  Font - Qoob Team
                                   libogc - Shagkur
-
-
-                                      Testing
-                           mithos / luciddream / softdev
-
-
-                                     Greets To
-                           HonkeyKong . Shagkur . Cedy_NL
-                             Raz` . Scognito . Brakken
-
-
-                                   Documentation
-                                      brakken
-
-×—–­—–­—–­—–­ –­—–­—–­—–­—–­—–­—–­—–­—–­—–­— ­—–­—–­—–­—–­—–­—–­—–­—-­—–­-–•¬
-|0O×øo·                          TECHNICAL NOTATIONS                  ·oø×O0|
-`¨•¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨'
-
-The Snes9X program normally expects to have constant access to a hard drive,
-to write out the SRAM data at a user specified interval. As we don't have
-this luxury on the Gamecube, the onus is in the user to save at regular
-intervals.
-
-We've been working closely with shagkur (libogc author) to track down the
-problems in the memcard functions.
-
-This release now has 24-7 memcard access for most users. Indeed, the test
-team have left a gamecube running for two days to ensure that the card
-still functions and saves/loads as expected.
-
-We can't use the latest WIP, as this breaks a lot of other things - so the
-source release includes the changes we made to libogc. You use those at
-your own risk !
-
-×—–­—–­—–­—–­ –­—–­—–­—–­—–­—–­—–­—–­—–­—–­— ­—–­—–­—–­—–­—–­—–­—–­—-­—–­-–•¬
-|0O×øo·                           SAVE GAME NOTES                     ·oø×O0|
-`¨•¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨'
-
-Due to the fact that Options (Sound Echo, Stereo Reverse, Transparancy, FPS)
-and PAD Configuration now is included in gamesave you need to configure PAD
-Controls and check the user options after loading a Snes9x GX 0.0.1 - 0.0.2
-savegame in Snes9x GX 0.0.4 for the first time.
-
-×—–­—–­—–­—–­ –­—–­—–­—–­—–­—–­—–­—–­—–­—–­— ­—–­—–­—–­—–­—–­—–­—–­—-­—–­-–•¬
-|0O×øo·                   SNES9X v1.43 - GX Edition 0.0.4             ·oø×O0|
-`¨•¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨'
