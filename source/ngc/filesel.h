@@ -15,6 +15,7 @@
 #define _NGCFILESEL_
 
 #include <unistd.h>
+#include <gccore.h>
 
 #define SAVEBUFFERSIZE (512 * 1024)
 #define MAXJOLIET 255
@@ -34,6 +35,7 @@ extern FILEENTRIES filelist[MAXFILES];
 extern unsigned char *savebuffer;
 extern int offset;
 extern int selection;
+extern char rootdir[10];
 extern char currentdir[MAXPATHLEN];
 extern int maxfiles;
 extern unsigned long SNESROMSize;
@@ -41,13 +43,9 @@ extern unsigned long SNESROMSize;
 void AllocSaveBuffer();
 void FreeSaveBuffer();
 bool MakeFilePath(char filepath[], int type, int method);
-int LoadFile(char * buffer, char filepath[], int length, int method, bool silent);
-int LoadFile(char filepath[], int method, bool silent);
-int SaveFile(char * buffer, char filepath[], int datasize, int method, bool silent);
-int SaveFile(char filepath[], int datasize, int method, bool silent);
 int OpenROM (int method);
 int autoLoadMethod();
-int autoSaveMethod();
+int autoSaveMethod(bool silent);
 int FileSortCallback(const void *f1, const void *f2);
 void StripExt(char* returnstring, char * inputstring);
 

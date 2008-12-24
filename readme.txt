@@ -40,7 +40,7 @@ a performance boost to GameCube users for those core-heavy games.
 
 Version 0.2.0
 +[Tantric]
-- Complete code replacement - ported Snes9x 1.43 core into Snes9x GX 007. 
+- Complete code replacement - ported Snes9x 1.43 core into Snes9x GX 008. 
 - Features added:
   * Wiimote, Nunchuk, and Classic controller support
   * Button mapping for all controller types

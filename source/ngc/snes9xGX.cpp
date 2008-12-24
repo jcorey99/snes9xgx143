@@ -19,9 +19,6 @@
 #include <ogcsys.h>
 #include <unistd.h>
 #include <wiiuse/wpad.h>
-#include <sdcard/card_cmn.h>
-#include <sdcard/wiisd_io.h>
-#include <sdcard/card_io.h>
 #include <fat.h>
 
 #ifdef HW_RVL
@@ -45,7 +42,7 @@ extern "C" {
 #include "snes9xGX.h"
 #include "aram.h"
 #include "dvd.h"
-#include "smbop.h"
+#include "networkop.h"
 #include "video.h"
 #include "menudraw.h"
 #include "s9xconfig.h"
@@ -73,6 +70,17 @@ extern unsigned int timediffallowed;
  * Shutdown / Reboot / Exit
  ***************************************************************************/
 
+void ExitCleanup()
+{
+	LWP_SuspendThread (devicethread);
+	UnmountAllFAT();
+	CloseShare();
+
+#ifdef HW_RVL
+	DI_Close();
+#endif
+}
+
 #ifdef HW_DOL
 	#define PSOSDLOADID 0x7c6000a6
 	int *psoid = (int *) 0x80001800;
@@ -81,9 +89,8 @@ extern unsigned int timediffallowed;
 
 void Reboot()
 {
-	UnmountAllFAT();
+	ExitCleanup();
 #ifdef HW_RVL
-	DI_Close();
     SYS_ResetSystem(SYS_RETURNTOMENU, 0, 0);
 #else
 	#define SOFTRESET_ADR ((volatile u32*)0xCC003024)
@@ -93,10 +100,9 @@ void Reboot()
 
 void ExitToLoader()
 {
-	UnmountAllFAT();
+	ExitCleanup();
 	// Exit to Loader
 	#ifdef HW_RVL
-		DI_Close();
 		exit(0);
 	#else	// gamecube
 		if (psoid[0] == PSOSDLOADID)
@@ -116,8 +122,7 @@ void ResetCB()
 }
 void ShutdownWii()
 {
-	UnmountAllFAT();
-	DI_Close();
+	ExitCleanup();
 	SYS_ResetSystem(SYS_POWEROFF, 0, 0);
 }
 #endif
@@ -205,6 +210,10 @@ emulate ()
 
 		if (ConfigRequested)
 		{
+			// go back to checking if devices were inserted/removed
+			// since we're entering the menu
+			LWP_ResumeThread (devicethread);
+
 			// change to menu video mode
 			ResetVideo_Menu ();
 
@@ -214,12 +223,12 @@ emulate ()
 			}
 			else if ( GCSettings.AutoSave == 2 )
 			{
-				if ( WaitPromptChoice ((char*)"Save Freeze State?", (char*)"Don't Save", (char*)"Save") )
+				if ( WaitPromptChoice ("Save Freeze State?", "Don't Save", "Save") )
 					NGCFreezeGame ( GCSettings.SaveMethod, SILENT );
 			}
 			else if ( GCSettings.AutoSave == 3 )
 			{
-				if ( WaitPromptChoice ((char*)"Save SRAM and Freeze State?", (char*)"Don't Save", (char*)"Save") )
+				if ( WaitPromptChoice ("Save SRAM and Freeze State?", "Don't Save", "Save") )
 				{
 					SaveSRAM(GCSettings.SaveMethod, SILENT );
 					NGCFreezeGame ( GCSettings.SaveMethod, SILENT );
@@ -234,7 +243,7 @@ emulate ()
 			MainMenu (2); // go to game menu
 
 			// save zoom level
-			SavePrefs(GCSettings.SaveMethod, SILENT);
+			SavePrefs(SILENT);
 
 			FrameTimer = 0;
 			setFrameTimerMethod (); // set frametimer method every time a ROM is loaded
@@ -247,6 +256,10 @@ emulate ()
 
 			CheckVideo = 1;	// force video update
 			prevRenderedFrameCount = IPPU.RenderedFramesCount;
+
+			// stop checking if devices were removed/inserted
+			// since we're starting emulation again
+			LWP_SuspendThread (devicethread);
 		}//if ConfigRequested
 
 	}//while
@@ -303,37 +316,34 @@ main(int argc, char *argv[])
 
 	int selectedMenu = -1;
 
+	InitDeviceThread();
+
 	// Initialise video
-	InitGCVideo ();
+	InitGCVideo();
 
 	// Controllers
+	PAD_Init ();
+
 	#ifdef HW_RVL
 	WPAD_Init();
 	// read wiimote accelerometer and IR data
 	WPAD_SetDataFormat(WPAD_CHAN_ALL,WPAD_FMT_BTNS_ACC_IR);
 	WPAD_SetVRes(WPAD_CHAN_ALL,640,480);
-	#endif
-
-	PAD_Init ();
 
 	// Wii Power/Reset buttons
-	#ifdef HW_RVL
 	WPAD_SetPowerButtonCallback((WPADShutdownCallback)ShutdownCB);
 	SYS_SetPowerCallback(ShutdownCB);
 	SYS_SetResetCallback(ResetCB);
 	#endif
-
-	// Audio
-	AUDIO_Init (NULL);
-
-	// GC Audio RAM (for ROM and backdrop storage)
-	AR_Init (NULL, 0);
 
 	// GameCube only - Injected ROM
 	// Before going any further, let's copy any injected ROM image
 	// We'll put it in ARAM for safe storage
 
 	#ifdef HW_DOL
+	// GC Audio RAM (for ROM and backdrop storage)
+	AR_Init (NULL, 0);
+
 	int *romptr = (int *) 0x81000000; // location of injected rom
 
 	if (memcmp ((char *) romptr, "SNESROM0", 8) == 0)
@@ -352,6 +362,8 @@ main(int argc, char *argv[])
 	}
 	#endif
 
+	unpackbackdrop();
+
 	// Initialise freetype font system
 	if (FT_Init ())
 	{
@@ -359,7 +371,8 @@ main(int argc, char *argv[])
 		while (1);
 	}
 
-	unpackbackdrop ();
+	// Audio
+	AUDIO_Init (NULL);
 
 	// Set defaults
 	DefaultSettings ();
@@ -392,7 +405,7 @@ main(int argc, char *argv[])
 		while (1);
 
 	// Initialize libFAT for SD and USB
-	fatInit (8, false);
+	MountAllFAT();
 
 	// Initialize DVD subsystem (GameCube only)
 	#ifdef HW_DOL
@@ -405,7 +418,7 @@ main(int argc, char *argv[])
 	// Load preferences
 	if(!LoadPrefs())
 	{
-		WaitPrompt((char*) "Preferences reset - check settings!");
+		WaitPrompt("Preferences reset - check settings!");
 		selectedMenu = 1; // change to preferences menu
 	}
 

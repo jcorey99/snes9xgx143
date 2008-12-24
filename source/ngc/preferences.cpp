@@ -19,7 +19,6 @@
 #include "menudraw.h"
 #include "memcardop.h"
 #include "fileop.h"
-#include "smbop.h"
 #include "filesel.h"
 #include "input.h"
 
@@ -124,7 +123,8 @@ preparePrefsData (int method)
 		memcpy (savebuffer, saveicon, offset);
 
 		// And the comments
-		sprintf (prefscomment[0], "%s Prefs", VERSIONSTR);
+		memset(prefscomment, 0, 64);
+		sprintf (prefscomment[0], "%s Prefs", APPNAME);
 		sprintf (prefscomment[1], "Preferences");
 		memcpy (savebuffer + offset, prefscomment, 64);
 		offset += 64;
@@ -134,7 +134,8 @@ preparePrefsData (int method)
 	mxmlSetWrapMargin(0); // disable line wrapping
 
 	data = mxmlNewElement(xml, "file");
-	mxmlElementSetAttr(data, "version",VERSIONSTR);
+	mxmlElementSetAttr(data, "app",APPNAME);
+	mxmlElementSetAttr(data, "version",APPVERSION);
 
 	createXMLSection("File", "File Settings");
 
@@ -189,11 +190,11 @@ preparePrefsData (int method)
  * Load XML elements into variables for an individual variable
  ***************************************************************************/
 
-void loadXMLSetting(char * var, const char * name)
+void loadXMLSetting(char * var, const char * name, int maxsize)
 {
 	item = mxmlFindElement(xml, xml, "setting", "name", name, MXML_DESCEND);
 	if(item)
-		sprintf(var, "%s", mxmlElementGetAttr(item, "value"));
+		snprintf(var, maxsize, "%s", mxmlElementGetAttr(item, "value"));
 }
 void loadXMLSetting(int * var, const char * name)
 {
@@ -271,17 +272,17 @@ decodePrefsData (int method)
 	loadXMLSetting(&GCSettings.AutoSave, "AutoSave");
 	loadXMLSetting(&GCSettings.LoadMethod, "LoadMethod");
 	loadXMLSetting(&GCSettings.SaveMethod, "SaveMethod");
-	loadXMLSetting(GCSettings.LoadFolder, "LoadFolder");
-	loadXMLSetting(GCSettings.SaveFolder, "SaveFolder");
-	loadXMLSetting(GCSettings.CheatFolder, "CheatFolder");
+	loadXMLSetting(GCSettings.LoadFolder, "LoadFolder", sizeof(GCSettings.LoadFolder));
+	loadXMLSetting(GCSettings.SaveFolder, "SaveFolder", sizeof(GCSettings.SaveFolder));
+	loadXMLSetting(GCSettings.CheatFolder, "CheatFolder", sizeof(GCSettings.CheatFolder));
 	loadXMLSetting(&GCSettings.VerifySaves, "VerifySaves");
 
 	// Network Settings
 
-	loadXMLSetting(GCSettings.smbip, "smbip");
-	loadXMLSetting(GCSettings.smbshare, "smbshare");
-	loadXMLSetting(GCSettings.smbuser, "smbuser");
-	loadXMLSetting(GCSettings.smbpwd, "smbpwd");
+	loadXMLSetting(GCSettings.smbip, "smbip", sizeof(GCSettings.smbip));
+	loadXMLSetting(GCSettings.smbshare, "smbshare", sizeof(GCSettings.smbshare));
+	loadXMLSetting(GCSettings.smbuser, "smbuser", sizeof(GCSettings.smbuser));
+	loadXMLSetting(GCSettings.smbpwd, "smbpwd", sizeof(GCSettings.smbpwd));
 
 	// Emulation Settings
 
@@ -313,22 +314,21 @@ decodePrefsData (int method)
  * Save Preferences
  ***************************************************************************/
 bool
-SavePrefs (int method, bool silent)
+SavePrefs (bool silent)
 {
 	char filepath[1024];
 	int datasize;
 	int offset = 0;
 
-	// there's no point in saving SMB settings TO SMB, because then we'll have no way to load them the next time!
-	// so instead we'll save using whatever other method is available (eg: SD)
-	if(method == METHOD_AUTO || method == METHOD_SMB)
-		method = autoSaveMethod();
+	// We'll save using the first available method (probably SD) since this
+	// is the method preferences will be loaded from by default
+	int method = autoSaveMethod(silent);
 
 	if(!MakeFilePath(filepath, FILE_PREF, method))
 		return false;
 
 	if (!silent)
-		ShowAction ((char*) "Saving preferences...");
+		ShowAction ("Saving preferences...");
 
 	AllocSaveBuffer ();
 	datasize = preparePrefsData (method);
@@ -340,7 +340,7 @@ SavePrefs (int method, bool silent)
 	if (offset > 0)
 	{
 		if (!silent)
-			WaitPrompt ((char *)"Preferences saved");
+			WaitPrompt ("Preferences saved");
 		return true;
 	}
 	return false;
@@ -377,17 +377,17 @@ LoadPrefsFromMethod (int method)
  ***************************************************************************/
 bool LoadPrefs()
 {
-	ShowAction ((char*) "Loading preferences...");
+	ShowAction ("Loading preferences...");
 	bool prefFound = false;
-	if(ChangeFATInterface(METHOD_SD, SILENT))
+	if(ChangeInterface(METHOD_SD, SILENT))
 		prefFound = LoadPrefsFromMethod(METHOD_SD);
-	if(!prefFound && ChangeFATInterface(METHOD_USB, SILENT))
+	if(!prefFound && ChangeInterface(METHOD_USB, SILENT))
 		prefFound = LoadPrefsFromMethod(METHOD_USB);
 	if(!prefFound && TestCard(CARD_SLOTA, SILENT))
 		prefFound = LoadPrefsFromMethod(METHOD_MC_SLOTA);
 	if(!prefFound && TestCard(CARD_SLOTB, SILENT))
 		prefFound = LoadPrefsFromMethod(METHOD_MC_SLOTB);
-	if(!prefFound && ConnectShare (SILENT))
+	if(!prefFound && ChangeInterface(METHOD_SMB, SILENT))
 		prefFound = LoadPrefsFromMethod(METHOD_SMB);
 
 	return prefFound;
