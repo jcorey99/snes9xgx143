@@ -27,8 +27,6 @@
 static unsigned char *snes9xgfx;
 static unsigned char *subscreen;
 
-extern unsigned int SMBTimer;
-
 /*** 2D Video ***/
 unsigned int *xfb[2] = { NULL, NULL }; // Double buffered
 int whichfb = 0; // Switch
@@ -288,7 +286,7 @@ InitVideoThread ()
 	LWP_InitQueue (&videoblankqueue);
 
 	/*** Create the thread on this queue ***/
-	LWP_CreateThread (&vbthread, vbgetback, NULL, vbstack, TSTACK, 80);
+	LWP_CreateThread (&vbthread, vbgetback, NULL, vbstack, TSTACK, 150);
 }
 
 /****************************************************************************
@@ -308,7 +306,6 @@ copy_to_xfb (u32 arg)
 	}
 
 	FrameTimer++;
-	SMBTimer++;
 }
 
 /****************************************************************************

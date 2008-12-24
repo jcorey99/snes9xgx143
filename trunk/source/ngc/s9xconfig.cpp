@@ -16,7 +16,7 @@
 #include <gccore.h>
 #include "snes9x.h"
 #include "snes9xGX.h"
-#include "smbop.h"
+#include "input.h"
 
 struct SGCSettings GCSettings;
 
@@ -24,11 +24,13 @@ void
 DefaultSettings ()
 {
 	/************** GameCube/Wii Settings *********************/
+	//ResetControls(); // controller button mappings
+
 	GCSettings.LoadMethod = METHOD_AUTO; // Auto, SD, DVD, USB, Network (SMB)
 	GCSettings.SaveMethod = METHOD_AUTO; // Auto, SD, Memory Card Slot A, Memory Card Slot B, USB, Network (SMB)
-	sprintf (GCSettings.LoadFolder,"snes9x143/roms"); // Path to game files
-	sprintf (GCSettings.SaveFolder,"snes9x143/saves"); // Path to save files
-	sprintf (GCSettings.CheatFolder,"snes9x143/cheats"); // Path to cheat files
+	sprintf (GCSettings.LoadFolder,"snes9x/roms"); // Path to game files
+	sprintf (GCSettings.SaveFolder,"snes9x/saves"); // Path to save files
+	sprintf (GCSettings.CheatFolder,"snes9x/cheats"); // Path to cheat files
 	GCSettings.AutoLoad = 1;
 	GCSettings.AutoSave = 1;
 
@@ -44,12 +46,6 @@ DefaultSettings ()
 	GCSettings.smbuser[19] = 0;
 	GCSettings.smbpwd[19] = 0;
 	GCSettings.smbshare[19] = 0;
-
-	GCSettings.gcip[0] = 0;
-	GCSettings.gwip[0] = 0;
-	GCSettings.mask[0] = 0;
-	GCSettings.smbsvid[0] = 0;
-	GCSettings.smbgcid[0] = 0;
 
 	GCSettings.Superscope = 0;
     GCSettings.Mouse = 0;

@@ -34,14 +34,15 @@ extern "C" {
 #include "menudraw.h"
 #include "video.h"
 #include "aram.h"
-#include "smbop.h"
+#include "networkop.h"
 #include "fileop.h"
 #include "memcardop.h"
 #include "input.h"
-#include "unzip.h"
+#include "gcunzip.h"
 
 int offset;
 int selection;
+char rootdir[10];
 char currentdir[MAXPATHLEN];
 char szpath[MAXPATHLEN];
 int maxfiles;
@@ -92,21 +93,24 @@ FreeSaveBuffer ()
 ****************************************************************************/
 int autoLoadMethod()
 {
-	ShowAction ((char*) "Attempting to determine load method...");
+	ShowAction ("Attempting to determine load method...");
 
-	if(ChangeFATInterface(METHOD_SD, SILENT))
-		return METHOD_SD;
-	else if(ChangeFATInterface(METHOD_USB, SILENT))
-		return METHOD_USB;
-	else if(TestDVD())
-		return METHOD_DVD;
-	else if(ConnectShare (SILENT))
-		return METHOD_SMB;
+	int method = 0;
+
+	if(ChangeInterface(METHOD_SD, SILENT))
+		method = METHOD_SD;
+	else if(ChangeInterface(METHOD_USB, SILENT))
+		method = METHOD_USB;
+	else if(ChangeInterface(METHOD_DVD, SILENT))
+		method = METHOD_DVD;
+	else if(ChangeInterface(METHOD_SMB, SILENT))
+		method = METHOD_SMB;
 	else
-	{
-		WaitPrompt((char*) "Unable to auto-determine load method!");
-		return 0; // no method found
-	}
+		WaitPrompt("Unable to auto-determine load method!");
+
+	if(GCSettings.LoadMethod == METHOD_AUTO)
+		GCSettings.LoadMethod = method; // save method found for later use
+	return method;
 }
 
 /****************************************************************************
@@ -114,25 +118,29 @@ int autoLoadMethod()
 * Auto-determines and sets the save method
 * Returns method set
 ****************************************************************************/
-int autoSaveMethod()
+int autoSaveMethod(bool silent)
 {
-	ShowAction ((char*) "Attempting to determine save method...");
+	if(!silent)
+		ShowAction ("Attempting to determine save method...");
 
-	if(ChangeFATInterface(METHOD_SD, SILENT))
-		return METHOD_SD;
-	else if(ChangeFATInterface(METHOD_USB, SILENT))
-		return METHOD_USB;
+	int method = 0;
+
+	if(ChangeInterface(METHOD_SD, SILENT))
+		method = METHOD_SD;
+	else if(ChangeInterface(METHOD_USB, SILENT))
+		method = METHOD_USB;
 	else if(TestCard(CARD_SLOTA, SILENT))
-		return METHOD_MC_SLOTA;
+		method = METHOD_MC_SLOTA;
 	else if(TestCard(CARD_SLOTB, SILENT))
-		return METHOD_MC_SLOTB;
-	else if(ConnectShare (SILENT))
-		return METHOD_SMB;
-	else
-	{
-		WaitPrompt((char*) "Unable to auto-determine save method!");
-		return 0; // no method found
-	}
+		method = METHOD_MC_SLOTB;
+	else if(ChangeInterface(METHOD_SMB, SILENT))
+		method = METHOD_SMB;
+	else if(!silent)
+		WaitPrompt("Unable to auto-determine save method!");
+
+	if(GCSettings.SaveMethod == METHOD_AUTO)
+		GCSettings.SaveMethod = method; // save method found for later use
+	return method;
 }
 
 /****************************************************************************
@@ -187,7 +195,7 @@ int UpdateDirName(int method)
 		}
 		else
 		{
-			WaitPrompt((char*)"Directory name is too long!");
+			WaitPrompt("Directory name is too long!");
 			return -1;
 		}
 	}
@@ -204,7 +212,7 @@ bool MakeFilePath(char filepath[], int type, int method)
 		// Check path length
 		if ((strlen(currentdir)+1+strlen(filelist[selection].filename)) >= MAXPATHLEN)
 		{
-			WaitPrompt((char*)"Maximum filepath length reached!");
+			WaitPrompt("Maximum filepath length reached!");
 			filepath[0] = 0;
 			return false;
 		}
@@ -236,84 +244,18 @@ bool MakeFilePath(char filepath[], int type, int method)
 		}
 		switch(method)
 		{
-			case METHOD_SD:
-			case METHOD_USB:
-				sprintf (temppath, "%s/%s/%s", ROOTFATDIR, folder, file);
-				break;
-			case METHOD_DVD:
-			case METHOD_SMB:
-				sprintf (temppath, "%s/%s", folder, file);
-				break;
 			case METHOD_MC_SLOTA:
 			case METHOD_MC_SLOTB:
 				sprintf (temppath, "%s", file);
 				temppath[31] = 0; // truncate filename
 				break;
+			default:
+				sprintf (temppath, "%s/%s", folder, file);
+				break;
 		}
 	}
 	strcpy(filepath, temppath);
 	return true;
-}
-
-int LoadFile(char * buffer, char filepath[], int length, int method, bool silent)
-{
-	int offset = 0;
-
-	switch(method)
-	{
-		case METHOD_SD:
-		case METHOD_USB:
-			if(ChangeFATInterface(method, NOTSILENT))
-				offset = LoadFATFile (buffer, filepath, length, silent);
-			break;
-		case METHOD_SMB:
-			offset = LoadSMBFile (buffer, filepath, length, silent);
-			break;
-		case METHOD_DVD:
-			offset = LoadDVDFile (buffer, filepath, length, silent);
-			break;
-		case METHOD_MC_SLOTA:
-			offset = LoadMCFile (buffer, CARD_SLOTA, filepath, silent);
-			break;
-		case METHOD_MC_SLOTB:
-			offset = LoadMCFile (buffer, CARD_SLOTB, filepath, silent);
-			break;
-	}
-	return offset;
-}
-
-int LoadFile(char filepath[], int method, bool silent)
-{
-	return LoadFile((char *)savebuffer, filepath, 0, method, silent);
-}
-
-int SaveFile(char * buffer, char filepath[], int datasize, int method, bool silent)
-{
-	int offset = 0;
-
-	switch(method)
-	{
-		case METHOD_SD:
-		case METHOD_USB:
-			if(ChangeFATInterface(method, NOTSILENT))
-				offset = SaveFATFile (buffer, filepath, datasize, silent);
-			break;
-		case METHOD_SMB:
-			offset = SaveSMBFile (buffer, filepath, datasize, silent);
-			break;
-		case METHOD_MC_SLOTA:
-			offset = SaveMCFile (buffer, CARD_SLOTA, filepath, datasize, silent);
-			break;
-		case METHOD_MC_SLOTB:
-			offset = SaveMCFile (buffer, CARD_SLOTB, filepath, datasize, silent);
-			break;
-	}
-	return offset;
-}
-
-int SaveFile(char filepath[], int datasize, int method, bool silent)
-{
-	return SaveFile((char *)savebuffer, filepath, datasize, method, silent);
 }
 
 /****************************************************************************
@@ -358,7 +300,7 @@ bool IsValidROM(int method)
 	if(filelist[selection].length < (1024*96) ||
 		filelist[selection].length > (1024*1024*8))
 	{
-		WaitPrompt((char *)"Invalid file size!");
+		WaitPrompt("Invalid file size!");
 		return false;
 	}
 
@@ -393,7 +335,7 @@ bool IsValidROM(int method)
 			}
 		}
 	}
-	WaitPrompt((char *)"Unknown file type!");
+	WaitPrompt("Unknown file type!");
 	return false;
 }
 
@@ -513,23 +455,18 @@ int FileSelector (int method)
 				{
 					switch (method)
 					{
-						case METHOD_SD:
-						case METHOD_USB:
-						maxfiles = ParseFATdirectory(method);
-						break;
-
 						case METHOD_DVD:
-						maxfiles = ParseDVDdirectory();
-						break;
+							maxfiles = ParseDVDdirectory();
+							break;
 
-						case METHOD_SMB:
-						maxfiles = ParseSMBdirectory(NOTSILENT);
-						break;
+						default:
+							maxfiles = ParseDirectory();
+							break;
 					}
 
 					if (!maxfiles)
 					{
-						WaitPrompt ((char*) "Error reading directory!");
+						WaitPrompt ("Error reading directory!");
 						haverom = 1; // quit menu
 					}
 				}
@@ -540,17 +477,17 @@ int FileSelector (int method)
 			}
 			else	// this is a file
 			{
-				// better do another unmount/remount, just in case
-				if(method == METHOD_SD || method == METHOD_USB)
-					if(!ChangeFATInterface(method, NOTSILENT))
-						return 0;
-
 				// 7z file - let's open it up to select a file inside
 				if(IsSz())
 				{
 					// we'll store the 7z filepath for extraction later
 					if(!MakeFilePath(szpath, FILE_ROM, method))
 						return 0;
+
+					// add device to filepath
+					char fullpath[1024];
+					sprintf(fullpath, "%s%s", rootdir, szpath);
+					strcpy(szpath, fullpath);
 
 					int szfiles = SzParse(szpath, method);
 					if(szfiles)
@@ -559,7 +496,7 @@ int FileSelector (int method)
 						inSz = true;
 					}
 					else
-						WaitPrompt((char*) "Error opening archive!");
+						WaitPrompt("Error opening archive!");
 				}
 				else
 				{
@@ -570,7 +507,7 @@ int FileSelector (int method)
 					// store the filename (w/o ext) - used for sram/freeze naming
 					StripExt(Memory.ROMFilename, filelist[selection].filename);
 
-					ShowAction ((char *)"Loading...");
+					ShowAction ("Loading...");
 
 					SNESROMSize = 0;
 
@@ -587,15 +524,11 @@ int FileSelector (int method)
 					{
 						switch (method)
 						{
-							case METHOD_SD:
-							case METHOD_USB:
-								SNESROMSize = LoadFATSzFile(szpath, (unsigned char *)Memory.ROM);
-								break;
 							case METHOD_DVD:
 								SNESROMSize = SzExtractFile(filelist[selection].offset, (unsigned char *)Memory.ROM);
 								break;
-							case METHOD_SMB:
-								SNESROMSize = LoadSMBSzFile(szpath,  (unsigned char *)Memory.ROM);
+							default:
+								SNESROMSize = LoadSzFile(szpath, (unsigned char *)Memory.ROM);
 								break;
 						}
 					}
@@ -604,7 +537,7 @@ int FileSelector (int method)
 					if (SNESROMSize > 0)
 						return 1;
 					else
-						WaitPrompt((char*) "Error loading ROM!");
+						WaitPrompt("Error loading ROM!");
 				}
 			}
 			redraw = 1;
@@ -713,99 +646,32 @@ int FileSelector (int method)
 }
 
 /****************************************************************************
- * OpenDVD
- *
- * Function to load a DVD directory and display to user.
+ * OpenROM
+ * Opens device specified by method, displays a list of ROMS
  ***************************************************************************/
+
 int
-OpenDVD (int method)
+OpenROM (int method)
 {
-	if (!getpvd())
+	if(method == METHOD_AUTO)
+		method = autoLoadMethod();
+
+	if(ChangeInterface(method, NOTSILENT))
 	{
-		ShowAction((char*) "Loading DVD...");
-		#ifdef HW_DOL
-		DVD_Mount(); // mount the DVD unit again
-		#elif WII_DVD
-		u32 val;
-		DI_GetCoverRegister(&val);
-		if(val & 0x1)	// True if no disc inside, use (val & 0x2) for true if disc inside.
+		// change current dir to roms directory
+		switch(method)
 		{
-			WaitPrompt((char *)"No disc inserted!");
-			return 0;
+			case METHOD_DVD:
+				currentdir[0] = 0;
+				maxfiles = ParseDVDdirectory (); // Parse root directory
+				SwitchDVDFolder(GCSettings.LoadFolder); // switch to ROM folder
+				break;
+			default:
+				sprintf(currentdir, "/%s", GCSettings.LoadFolder);
+				maxfiles = ParseDirectory(); // Parse root directory
+				break;
 		}
-		DI_Mount();
-		while(DI_GetStatus() & DVD_INIT);
-		#endif
 
-		if (!getpvd())
-		{
-			WaitPrompt ((char *)"Invalid DVD.");
-			return 0; // not a ISO9660 DVD
-		}
-	}
-
-	currentdir[0] = 0;
-	maxfiles = ParseDVDdirectory(); // load root folder
-
-	// switch to rom folder
-	SwitchDVDFolder(GCSettings.LoadFolder);
-
-	if (maxfiles > 0)
-	{
-		return FileSelector (method);
-	}
-	else
-	{
-		// no entries found
-		WaitPrompt ((char *)"No Files Found!");
-		return 0;
-	}
-}
-
-/****************************************************************************
- * OpenSMB
- *
- * Function to load from an SMB share
- ***************************************************************************/
-int
-OpenSMB (int method)
-{
-	// Connect to network share
-	if(ConnectShare (NOTSILENT))
-	{
-		// change current dir to load dir
-		sprintf(currentdir, "/%s", GCSettings.LoadFolder);
-
-		maxfiles = ParseSMBdirectory (SILENT);
-		if (maxfiles > 0)
-		{
-			return FileSelector (method);
-		}
-		else
-		{
-			// no entries found
-			WaitPrompt ((char *)"No Files Found!");
-			return 0;
-		}
-	}
-	return 0;
-}
-
-/****************************************************************************
- * OpenFAT
- *
- * Function to load from FAT
- ***************************************************************************/
-int
-OpenFAT (int method)
-{
-	if(ChangeFATInterface(method, NOTSILENT))
-	{
-		// change current dir to snes roms directory
-		sprintf ( currentdir, "%s/%s", ROOTFATDIR, GCSettings.LoadFolder );
-
-		// Parse initial root directory and get entries list
-		maxfiles = ParseFATdirectory (method);
 		if (maxfiles > 0)
 		{
 			// Select an entry
@@ -814,41 +680,9 @@ OpenFAT (int method)
 		else
 		{
 			// no entries found
-			WaitPrompt ((char *)"No Files Found!");
+			WaitPrompt ("No Files Found!");
 			return 0;
 		}
 	}
 	return 0;
-}
-
-/****************************************************************************
- * OpenROM
- * Opens device specified by method, displays a list of ROMS
- ***************************************************************************/
-
-int
-OpenROM (int method)
-{
-	int loadROM = 0;
-
-	if(method == METHOD_AUTO)
-		method = autoLoadMethod();
-
-	switch (method)
-	{
-		case METHOD_SD:
-		case METHOD_USB:
-			loadROM = OpenFAT (method);
-			break;
-		case METHOD_DVD:
-			// Load from DVD
-			loadROM = OpenDVD (method);
-			break;
-		case METHOD_SMB:
-			// Load from Network (SMB)
-			loadROM = OpenSMB (method);
-			break;
-	}
-
-	return loadROM;
 }

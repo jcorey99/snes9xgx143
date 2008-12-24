@@ -12,7 +12,7 @@
 #include "cheats.h"
 
 #include "snes9xGX.h"
-#include "filesel.h"
+#include "fileop.h"
 #include "menudraw.h"
 
 extern SCheatData Cheat;
@@ -69,7 +69,7 @@ SetupCheats()
 	int method = GCSettings.SaveMethod;
 
 	if(method == METHOD_AUTO)
-		method = autoSaveMethod();
+		method = autoSaveMethod(SILENT);
 
 	if(!MakeFilePath(filepath, FILE_CHEAT, method))
 		return;
