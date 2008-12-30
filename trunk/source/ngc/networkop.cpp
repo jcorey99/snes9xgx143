@@ -15,9 +15,9 @@
 #include "menudraw.h"
 #include "fileop.h"
 
-bool networkInit = false;
-bool autoNetworkInit = true;
-bool networkShareInit = false;
+static bool networkInit = false;
+static bool autoNetworkInit = true;
+static bool networkShareInit = false;
 
 /****************************************************************************
  * InitializeNetwork

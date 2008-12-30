@@ -105,4 +105,3 @@ DefaultSettings ()
 
     Settings.SwapJoypads = FALSE;
 }
-
