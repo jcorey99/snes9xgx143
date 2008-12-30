@@ -18,7 +18,7 @@
 #include <string.h>
 #include <wiiuse/wpad.h>
 
-#ifdef WII_DVD
+#ifdef HW_RVL
 extern "C" {
 #include <di/di.h>
 }
@@ -54,6 +54,8 @@ extern "C" {
 #include "cheatmgr.h"
 #include "input.h"
 #include "patch.h"
+
+extern int menu;
 
 /****************************************************************************
  * Load Manager
@@ -273,13 +275,13 @@ GameMenu ()
 {
 	int gamemenuCount = 9;
 	char gamemenu[][50] = {
-	  "Return to Game",
-	  "Reset Game",
-	  "ROM Information",
-	  "Load SRAM", "Save SRAM",
-	  "Load Game Snapshot", "Save Game Snapshot",
-	  "Reset Zoom",
-	  "Back to Main Menu"
+		"Return to Game",
+		"Reset Game",
+		"ROM Information",
+		"Load SRAM", "Save SRAM",
+		"Load Game Snapshot", "Save Game Snapshot",
+		"Reset Zoom",
+		"Back to Main Menu"
 	};
 
 	int ret, retval = 0;
@@ -365,23 +367,23 @@ GameMenu ()
 /****************************************************************************
  * File Options Menu
  ***************************************************************************/
-static int filemenuCount = 8;
-static char filemenu[][50] = {
-	"Load Method",
-	"Load Folder",
-	"Save Method",
-	"Save Folder",
-
-	"Auto Load",
-	"Auto Save",
-	"Verify MC Saves",
-
-	"Back to Preferences Menu"
-};
-
 void
 FileOptions ()
 {
+	int filemenuCount = 8;
+	char filemenu[][50] = {
+		"Load Method",
+		"Load Folder",
+		"Save Method",
+		"Save Folder",
+
+		"Auto Load",
+		"Auto Save",
+		"Verify MC Saves",
+
+		"Back to Preferences Menu"
+	};
+
 	int ret = 0;
 	int quit = 0;
 	int oldmenu = menu;
@@ -504,27 +506,27 @@ FileOptions ()
 /****************************************************************************
  * Video Options
  ***************************************************************************/
-static int videomenuCount = 10;
-static char videomenu[][50] = {
-
-	"Enable Zooming",
-	"Video Rendering",
-	"Video Scaling",
-
-	"Shift Video Up",
-	"Shift Video Down",
-	"Shift Video Left",
-	"Shift Video Right",
-
-	"Video Shift:       ",
-	"Reset Video Shift",
-
-	"Back to Preferences Menu"
-};
-
-void
+static void
 VideoOptions ()
 {
+	int videomenuCount = 10;
+	char videomenu[][50] = {
+
+		"Enable Zooming",
+		"Video Rendering",
+		"Video Scaling",
+
+		"Shift Video Up",
+		"Shift Video Down",
+		"Shift Video Left",
+		"Shift Video Right",
+
+		"Video Shift:       ",
+		"Reset Video Shift",
+
+		"Back to Preferences Menu"
+	};
+
 	int ret = 0;
 	int quit = 0;
 	int oldmenu = menu;
@@ -661,20 +663,20 @@ GetInput (u16 ctrlr_type)
 	return pressed;
 }	// end GetInput()
 
-int cfg_text_count = 7;
-char cfg_text[][50] = {
-"Remapping          ",
-"Press Any Button",
-"on the",
-"       ",	// identify controller
-"                   ",
-"Press C-Left or",
-"Home to exit"
-};
-
 u32
 GetButtonMap(u16 ctrlr_type, char* btn_name)
 {
+	int cfg_text_count = 7;
+	char cfg_text[][50] = {
+	"Remapping          ",
+	"Press Any Button",
+	"on the",
+	"       ",	// identify controller
+	"                   ",
+	"Press C-Left or",
+	"Home to exit"
+	};
+
 	u32 pressed, previous;
 	char temp[50] = "";
 	uint k;
@@ -712,7 +714,10 @@ GetButtonMap(u16 ctrlr_type, char* btn_name)
 	return pressed;
 }	// end getButtonMap()
 
-int cfg_btns_count = 13;
+void
+ConfigureButtons (u16 ctrlr_type)
+{
+	int cfg_btns_count = 13;
 char cfg_btns_menu[][50] = {
 	"A        -         ",
 	"B        -         ",
@@ -729,14 +734,6 @@ char cfg_btns_menu[][50] = {
 	"Return to previous"
 };
 
-extern unsigned int gcpadmap[];
-extern unsigned int wmpadmap[];
-extern unsigned int ccpadmap[];
-extern unsigned int ncpadmap[];
-
-void
-ConfigureButtons (u16 ctrlr_type)
-{
 	int quit = 0;
 	int ret = 0;
 	int oldmenu = menu;
@@ -829,24 +826,24 @@ ConfigureButtons (u16 ctrlr_type)
 	menu = oldmenu;
 }	// end configurebuttons()
 
-int ctlrmenucount = 9;
-char ctlrmenu[][50] = {
-	// toggle:
-	"MultiTap",
-	"SuperScope",
-	"Snes Mice",
-	"Justifiers",
-	// config:
-	"Nunchuk",
-	"Classic Controller",
-	"Wiimote",
-	"Gamecube Pad",
-	"Back to Preferences Menu"
-};
-
 void
 ConfigureControllers ()
 {
+	int ctlrmenucount = 9;
+	char ctlrmenu[][50] = {
+		// toggle:
+		"MultiTap",
+		"SuperScope",
+		"Snes Mice",
+		"Justifiers",
+		// config:
+		"Nunchuk",
+		"Classic Controller",
+		"Wiimote",
+		"Gamecube Pad",
+		"Back to Preferences Menu"
+	};
+
 	int quit = 0;
 	int ret = 0;
 	int oldmenu = menu;
@@ -930,18 +927,19 @@ ConfigureControllers ()
 /****************************************************************************
  * Preferences Menu
  ***************************************************************************/
-static int prefmenuCount = 5;
-static char prefmenu[][50] = {
-	"Controllers",
-	"Video",
-	"Saving / Loading",
-	"Reset Preferences",
-	"Back to Main Menu"
-};
 
 void
 PreferencesMenu ()
 {
+	int prefmenuCount = 5;
+	char prefmenu[][50] = {
+		"Controllers",
+		"Video",
+		"Saving / Loading",
+		"Reset Preferences",
+		"Back to Main Menu"
+	};
+
 	int ret = 0;
 	int quit = 0;
 	int oldmenu = menu;
@@ -983,20 +981,21 @@ PreferencesMenu ()
 /****************************************************************************
  * Main Menu
  ***************************************************************************/
-int menucount = 7;
-char menuitems[][50] = {
-  "Choose Game",
-  "Preferences",
-  "Game Menu",
-  "Credits",
-  "DVD Motor Off",
-  "Reset System",
-  "Return to Loader"
-};
 
 void
 MainMenu (int selectedMenu)
 {
+	int menucount = 7;
+	char menuitems[][50] = {
+		"Choose Game",
+		"Preferences",
+		"Game Menu",
+		"Credits",
+		"DVD Motor Off",
+		"Reset System",
+		"Return to Loader"
+	};
+
 	int quit = 0;
 	int ret;
 

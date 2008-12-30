@@ -121,7 +121,7 @@ extern unsigned long SNESROMSize;
 #include "spc7110.h"
 #include "seta.h"
 
-#include "unzip.h"
+//#include "unzip.h"
 
 #ifdef __W32_HEAP
 #include <malloc.h>

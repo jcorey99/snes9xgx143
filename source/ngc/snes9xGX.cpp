@@ -320,6 +320,7 @@ main(int argc, char *argv[])
 
 	// Initialise video
 	InitGCVideo();
+	ResetVideo_Menu (); // change to menu video mode
 
 	// Controllers
 	PAD_Init ();
@@ -381,9 +382,6 @@ main(int argc, char *argv[])
 	sprintf(appPath, "snes9x143");
 	if(argc > 0 && argv[0] != NULL)
 		CreateAppPath(argv[0]);
-
-	//S9xUnmapAllControls ();
-	//SetDefaultButtonMap ();
 
 	// Allocate SNES Memory
 	if (!Memory.Init ())
