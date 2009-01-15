@@ -36,13 +36,13 @@
  *
  * The following map the NGC Pads to the *NEW* controller system.
  ***************************************************************************/
- 
- unsigned int snespadmap[] = { 
-	SNES_A_MASK, SNES_B_MASK, 
+
+ unsigned int snespadmap[] = {
+	SNES_A_MASK, SNES_B_MASK,
 	SNES_X_MASK, SNES_Y_MASK,
 	SNES_TL_MASK, SNES_TR_MASK,
 	SNES_SELECT_MASK, SNES_START_MASK,
-	SNES_UP_MASK, SNES_DOWN_MASK, 
+	SNES_UP_MASK, SNES_DOWN_MASK,
 	SNES_LEFT_MASK, SNES_RIGHT_MASK
 };
 
@@ -414,7 +414,6 @@ unsigned int GetJoys(int which)
 #ifdef HW_RVL
 		 || (wm_pb & WPAD_BUTTON_HOME)
 		 || (wm_pb & WPAD_CLASSIC_BUTTON_HOME)
-		 || (wm_sx < -70)
 #endif
        )
     {
