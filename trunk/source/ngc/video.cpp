@@ -432,9 +432,6 @@ UpdatePadsCB ()
 void
 InitGCVideo ()
 {
-	// init video
-    VIDEO_Init ();
-
 	// get default video mode
 	vmode = VIDEO_GetPreferredMode(NULL);
 

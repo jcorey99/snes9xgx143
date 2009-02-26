@@ -311,18 +311,13 @@ main(int argc, char *argv[])
 	#endif
 
 	#ifdef WII_DVD
+	DI_Close();
 	DI_Init();	// first
 	#endif
 
 	int selectedMenu = -1;
 
-	InitDeviceThread();
-
-	// Initialise video
-	InitGCVideo();
-	ResetVideo_Menu (); // change to menu video mode
-
-	// Controllers
+	VIDEO_Init();
 	PAD_Init ();
 
 	#ifdef HW_RVL
@@ -336,6 +331,10 @@ main(int argc, char *argv[])
 	SYS_SetPowerCallback(ShutdownCB);
 	SYS_SetResetCallback(ResetCB);
 	#endif
+
+	InitDeviceThread();
+	InitGCVideo(); // Initialise video
+	ResetVideo_Menu (); // change to menu video mode
 
 	// GameCube only - Injected ROM
 	// Before going any further, let's copy any injected ROM image
